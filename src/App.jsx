@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState } from "react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, LineChart, Line
@@ -7,9 +7,9 @@ import {
   LayoutDashboard, Building2, CalendarDays, PenSquare, BarChart3, Settings2,
   Plus, Instagram, Facebook, Twitter, Linkedin, Sparkles, Clock, CheckCircle2,
   Eye, Heart, MessageCircle, TrendingUp, Users, Bell, ChevronDown, Loader2,
-  X, ChevronLeft, ChevronRight, Send, Hash, Edit3, Trash2, Globe, Target,
-  Image as Img, Zap, LogOut, User, RefreshCw, Copy, Check, Menu, MoreHorizontal,
-  Calendar, AlertCircle, ArrowUpRight, Layers, Share2, Star
+  ChevronLeft, ChevronRight, Send, Hash, Globe,
+  Zap, LogOut, RefreshCw, Copy, Check, Menu, MoreHorizontal,
+  AlertCircle, ArrowUpRight, Share2, Star, Image as Img
 } from "lucide-react";
 
 // ══════════════════════════════════════════════
@@ -101,35 +101,38 @@ function fmtNum(n) {
   if (n >= 1000) return (n/1000).toFixed(1)+"K";
   return String(n);
 }
+function getDaysInMonth(year, month) { return new Date(year, month + 1, 0).getDate(); }
+function getFirstDay(year, month) { return new Date(year, month, 1).getDay(); }
 
-function getDaysInMonth(year, month) {
-  return new Date(year, month + 1, 0).getDate();
-}
-function getFirstDay(year, month) {
-  return new Date(year, month, 1).getDay();
+// ══════════════════════════════════════════════
+// PLATFORM ICON HELPER — fixes JSX bracket error
+// ══════════════════════════════════════════════
+function PlatformIcon({ platform, size = 16 }) {
+  const pl = PLATFORMS[platform];
+  if (!pl) return null;
+  const { Icon, color } = pl;
+  return <Icon size={size} color={color} />;
 }
 
 // ══════════════════════════════════════════════
 // SMALL COMPONENTS
 // ══════════════════════════════════════════════
-function PlatformBadge({ platform, size = "sm" }) {
+function PlatformBadge({ platform }) {
   const p = PLATFORMS[platform];
   if (!p) return null;
-  const { Icon, color } = p;
-  const sz = size === "sm" ? 12 : 16;
+  const { Icon, color, name } = p;
   return (
     <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"2px 8px", borderRadius:20, background:`${color}18`, border:`0.5px solid ${color}40`, fontSize:11, fontWeight:500, color }}>
-      <Icon size={sz} />
-      {size !== "xs" && p.name}
+      <Icon size={12} />{name}
     </span>
   );
 }
 
 function StatusBadge({ status }) {
   const map = {
-    published: { label: "Published", bg: `${T.green}18`, color: T.green, border: `${T.green}40` },
-    scheduled: { label: "Scheduled", bg: `${T.amber}18`, color: T.amber, border: `${T.amber}40` },
-    draft: { label: "Draft", bg: `${T.sub}18`, color: T.sub, border: `${T.sub}40` },
+    published: { label:"Published", bg:`${T.green}18`, color:T.green, border:`${T.green}40` },
+    scheduled:  { label:"Scheduled", bg:`${T.amber}18`, color:T.amber, border:`${T.amber}40` },
+    draft:      { label:"Draft",     bg:`${T.sub}18`,   color:T.sub,   border:`${T.sub}40` },
   };
   const s = map[status] || map.draft;
   return (
@@ -149,24 +152,18 @@ function Card({ children, style, onClick, hover }) {
       style={{
         background: isHov && hover ? T.cardH : T.card,
         border: `0.5px solid ${isHov && hover ? T.borderH : T.border}`,
-        borderRadius: 16,
-        transition: "all 0.2s",
-        cursor: onClick ? "pointer" : "default",
-        ...style
+        borderRadius: 16, transition: "all 0.2s",
+        cursor: onClick ? "pointer" : "default", ...style
       }}
-    >
-      {children}
-    </div>
+    >{children}</div>
   );
 }
 
 function Btn({ children, onClick, variant = "primary", style, disabled, loading }) {
   const [hov, setHov] = useState(false);
-  const bg = variant === "primary"
-    ? (hov ? T.primaryH : T.primary)
-    : variant === "ghost"
-    ? (hov ? T.dark : "transparent")
-    : T.card;
+  const bg = variant === "primary" ? (hov ? T.primaryH : T.primary)
+           : variant === "ghost"   ? (hov ? T.dark : "transparent")
+           : T.card;
   return (
     <button
       disabled={disabled || loading}
@@ -176,11 +173,10 @@ function Btn({ children, onClick, variant = "primary", style, disabled, loading 
       style={{
         display:"inline-flex", alignItems:"center", gap:6,
         padding:"8px 16px", borderRadius:10, fontSize:13, fontWeight:500,
-        border: `0.5px solid ${variant === "primary" ? T.primary : T.border}`,
-        background: bg, color: variant === "primary" ? "#fff" : T.text,
-        cursor: disabled ? "not-allowed" : "pointer", transition:"all 0.15s",
-        opacity: disabled ? 0.5 : 1,
-        ...style
+        border:`0.5px solid ${variant === "primary" ? T.primary : T.border}`,
+        background:bg, color:variant === "primary" ? "#fff" : T.text,
+        cursor: disabled ? "not-allowed" : "pointer",
+        transition:"all 0.15s", opacity:disabled ? 0.5 : 1, ...style
       }}
     >
       {loading && <Loader2 size={14} style={{ animation:"spin 1s linear infinite" }} />}
@@ -191,14 +187,14 @@ function Btn({ children, onClick, variant = "primary", style, disabled, loading 
 
 function StatCard({ label, value, sub, icon: Icon, color, trend }) {
   return (
-    <Card style={{ padding: "1.25rem" }}>
+    <Card style={{ padding:"1.25rem" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
         <div style={{ width:38, height:38, borderRadius:10, background:`${color}18`, display:"flex", alignItems:"center", justifyContent:"center" }}>
           <Icon size={18} color={color} />
         </div>
         {trend !== undefined && (
-          <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:12, color: trend >= 0 ? T.green : T.red }}>
-            <ArrowUpRight size={12} style={{ transform: trend < 0 ? "rotate(90deg)" : "" }} />
+          <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:12, color:trend >= 0 ? T.green : T.red }}>
+            <ArrowUpRight size={12} style={{ transform:trend < 0 ? "rotate(90deg)" : "" }} />
             {Math.abs(trend)}%
           </span>
         )}
@@ -217,16 +213,13 @@ function Sidebar({ view, setView, store, setStore, stores, collapsed, setCollaps
   const [storeOpen, setStoreOpen] = useState(false);
   return (
     <aside style={{
-      width: collapsed ? 72 : 240,
-      minWidth: collapsed ? 72 : 240,
-      background: T.sidebar,
-      borderRight: `0.5px solid ${T.border}`,
-      display:"flex", flexDirection:"column",
-      transition:"all 0.25s ease",
+      width:collapsed ? 72 : 240, minWidth:collapsed ? 72 : 240,
+      background:T.sidebar, borderRight:`0.5px solid ${T.border}`,
+      display:"flex", flexDirection:"column", transition:"all 0.25s ease",
       position:"relative", zIndex:10,
     }}>
       {/* Logo */}
-      <div style={{ padding: collapsed ? "20px 0" : "20px 20px", borderBottom:`0.5px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent: collapsed ? "center" : "space-between" }}>
+      <div style={{ padding:collapsed ? "20px 0" : "20px 20px", borderBottom:`0.5px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:collapsed ? "center" : "space-between" }}>
         {!collapsed && (
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <div style={{ width:30, height:30, borderRadius:8, background:`linear-gradient(135deg,${T.primary},${T.cyan})`, display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -240,7 +233,7 @@ function Sidebar({ view, setView, store, setStore, stores, collapsed, setCollaps
             <Zap size={16} color="#fff" />
           </div>
         )}
-        <button onClick={() => setCollapsed(!collapsed)} style={{ background:"transparent", border:"none", cursor:"pointer", color:T.sub, padding:4, borderRadius:6, display: collapsed ? "none" : "flex" }}>
+        <button onClick={() => setCollapsed(!collapsed)} style={{ background:"transparent", border:"none", cursor:"pointer", color:T.sub, padding:4, borderRadius:6, display:collapsed ? "none" : "flex" }}>
           <ChevronLeft size={16} />
         </button>
       </div>
@@ -250,12 +243,7 @@ function Sidebar({ view, setView, store, setStore, stores, collapsed, setCollaps
         <div style={{ padding:"12px 12px 0" }}>
           <div
             onClick={() => setStoreOpen(!storeOpen)}
-            style={{
-              display:"flex", alignItems:"center", gap:10, padding:"10px 10px",
-              borderRadius:10, cursor:"pointer", background: storeOpen ? T.dark : "transparent",
-              border:`0.5px solid ${storeOpen ? T.borderH : T.border}`,
-              transition:"all 0.15s",
-            }}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 10px", borderRadius:10, cursor:"pointer", background:storeOpen ? T.dark : "transparent", border:`0.5px solid ${storeOpen ? T.borderH : T.border}`, transition:"all 0.15s" }}
           >
             <div style={{ width:28, height:28, borderRadius:7, background:store.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:"#fff", flexShrink:0 }}>
               {store.avatar}
@@ -264,25 +252,15 @@ function Sidebar({ view, setView, store, setStore, stores, collapsed, setCollaps
               <div style={{ fontSize:13, fontWeight:500, color:T.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{store.name}</div>
               <div style={{ fontSize:11, color:T.sub }}>{store.category}</div>
             </div>
-            <ChevronDown size={14} color={T.sub} style={{ transform: storeOpen ? "rotate(180deg)" : "", transition:"transform 0.2s", flexShrink:0 }} />
+            <ChevronDown size={14} color={T.sub} style={{ transform:storeOpen ? "rotate(180deg)" : "", transition:"transform 0.2s", flexShrink:0 }} />
           </div>
-
           {storeOpen && (
             <div style={{ marginTop:4, background:T.card, border:`0.5px solid ${T.border}`, borderRadius:10, overflow:"hidden" }}>
               {stores.map(s => (
-                <div
-                  key={s.id}
-                  onClick={() => { setStore(s); setStoreOpen(false); }}
-                  style={{
-                    display:"flex", alignItems:"center", gap:8, padding:"9px 10px",
-                    cursor:"pointer", background: s.id === store.id ? T.dark : "transparent",
-                    transition:"background 0.15s",
-                  }}
-                >
-                  <div style={{ width:22, height:22, borderRadius:5, background:s.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:700, color:"#fff" }}>
-                    {s.avatar}
-                  </div>
-                  <span style={{ fontSize:12, color: s.id === store.id ? T.text : T.sub }}>{s.name}</span>
+                <div key={s.id} onClick={() => { setStore(s); setStoreOpen(false); }}
+                  style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 10px", cursor:"pointer", background:s.id === store.id ? T.dark : "transparent", transition:"background 0.15s" }}>
+                  <div style={{ width:22, height:22, borderRadius:5, background:s.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:700, color:"#fff" }}>{s.avatar}</div>
+                  <span style={{ fontSize:12, color:s.id === store.id ? T.text : T.sub }}>{s.name}</span>
                   {s.id === store.id && <Check size={12} color={T.primary} style={{ marginLeft:"auto" }} />}
                 </div>
               ))}
@@ -296,18 +274,15 @@ function Sidebar({ view, setView, store, setStore, stores, collapsed, setCollaps
         </div>
       )}
 
-      {/* Navigation */}
-      <nav style={{ flex:1, padding: collapsed ? "12px 8px" : "12px 12px", display:"flex", flexDirection:"column", gap:2 }}>
-        {NAV.map(({ id, label, Icon }) => {
-          const active = view === id;
-          return (
-            <NavItem key={id} id={id} label={label} Icon={Icon} active={active} collapsed={collapsed} onClick={() => setView(id)} />
-          );
-        })}
+      {/* Nav */}
+      <nav style={{ flex:1, padding:collapsed ? "12px 8px" : "12px 12px", display:"flex", flexDirection:"column", gap:2 }}>
+        {NAV.map(({ id, label, Icon }) => (
+          <NavItem key={id} id={id} label={label} Icon={Icon} active={view === id} collapsed={collapsed} onClick={() => setView(id)} />
+        ))}
       </nav>
 
-      {/* Bottom: User */}
-      <div style={{ padding: collapsed ? "12px 8px" : "12px 12px", borderTop:`0.5px solid ${T.border}` }}>
+      {/* User */}
+      <div style={{ padding:collapsed ? "12px 8px" : "12px 12px", borderTop:`0.5px solid ${T.border}` }}>
         {collapsed ? (
           <div onClick={() => setCollapsed(false)} style={{ display:"flex", justifyContent:"center", cursor:"pointer" }}>
             <Menu size={18} color={T.sub} />
@@ -327,26 +302,20 @@ function Sidebar({ view, setView, store, setStore, stores, collapsed, setCollaps
   );
 }
 
-function NavItem({ id, label, Icon, active, collapsed, onClick }) {
+function NavItem({ label, Icon, active, collapsed, onClick }) {
   const [hov, setHov] = useState(false);
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
+    <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       title={collapsed ? label : ""}
       style={{
         display:"flex", alignItems:"center", gap:10,
-        padding: collapsed ? "10px 0" : "9px 10px",
+        padding:collapsed ? "10px 0" : "9px 10px",
         borderRadius:10, border:"none", cursor:"pointer",
-        background: active ? `${T.primary}20` : (hov ? T.dark : "transparent"),
-        color: active ? T.primary : (hov ? T.text : T.sub),
-        fontSize:13, fontWeight: active ? 500 : 400,
-        transition:"all 0.15s",
-        justifyContent: collapsed ? "center" : "flex-start",
-        width:"100%",
-      }}
-    >
+        background:active ? `${T.primary}20` : (hov ? T.dark : "transparent"),
+        color:active ? T.primary : (hov ? T.text : T.sub),
+        fontSize:13, fontWeight:active ? 500 : 400, transition:"all 0.15s",
+        justifyContent:collapsed ? "center" : "flex-start", width:"100%",
+      }}>
       <Icon size={18} />
       {!collapsed && label}
       {active && !collapsed && <div style={{ marginLeft:"auto", width:4, height:4, borderRadius:2, background:T.primary }} />}
@@ -362,9 +331,7 @@ function Header({ title, store, actions }) {
     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
       <div>
         <h1 style={{ fontSize:20, fontWeight:600, color:T.text, margin:0, letterSpacing:"-0.3px" }}>{title}</h1>
-        <p style={{ fontSize:13, color:T.sub, margin:"3px 0 0" }}>
-          {store.name} · {store.city}
-        </p>
+        <p style={{ fontSize:13, color:T.sub, margin:"3px 0 0" }}>{store.name} · {store.city}</p>
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
         {actions}
@@ -384,18 +351,13 @@ function DashboardView({ store, posts, setView }) {
   const storePosts = posts.filter(p => p.storeId === store.id);
   const published = storePosts.filter(p => p.status === "published");
   const scheduled = storePosts.filter(p => p.status === "scheduled");
-  const totalLikes = published.reduce((a, p) => a + p.likes, 0);
-  const totalReach = published.reduce((a, p) => a + p.reach, 0);
 
   return (
     <div>
       <Header title="Dashboard" store={store} actions={
-        <Btn onClick={() => setView("create")} style={{ gap:6 }}>
-          <Plus size={14} /> New Post
-        </Btn>
+        <Btn onClick={() => setView("create")}><Plus size={14} /> New Post</Btn>
       } />
 
-      {/* Stats */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom:24 }}>
         <StatCard label="Total Followers" value={fmtNum(store.followers)} icon={Users} color={T.primary} trend={8.4} />
         <StatCard label="Engagement Rate" value={`${store.engagement}%`} icon={TrendingUp} color={T.cyan} trend={2.1} />
@@ -403,7 +365,7 @@ function DashboardView({ store, posts, setView }) {
         <StatCard label="Posts Scheduled" value={String(scheduled.length)} icon={Clock} color={T.amber} sub="Upcoming" />
       </div>
 
-      {/* Charts row */}
+      {/* Charts */}
       <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:16, marginBottom:24 }}>
         <Card style={{ padding:"1.25rem" }}>
           <div style={{ fontSize:14, fontWeight:500, color:T.text, marginBottom:4 }}>Follower Growth</div>
@@ -430,13 +392,15 @@ function DashboardView({ store, posts, setView }) {
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
             {store.platforms.map(p => {
               const pl = PLATFORMS[p];
+              if (!pl) return null;
               const pPosts = storePosts.filter(x => x.platform === p);
               const pct = Math.round((pPosts.length / Math.max(storePosts.length, 1)) * 100);
+              const PlIcon = pl.Icon;
               return (
                 <div key={p}>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <pl.Icon size={14} color={pl.color} />
+                      <PlIcon size={14} color={pl.color} />
                       <span style={{ fontSize:12, color:T.text }}>{pl.name}</span>
                     </div>
                     <span style={{ fontSize:12, color:T.sub }}>{pPosts.length} posts</span>
@@ -477,24 +441,27 @@ function DashboardView({ store, posts, setView }) {
           <Btn variant="ghost" style={{ fontSize:12, padding:"4px 10px" }} onClick={() => setView("calendar")}>View All</Btn>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
-          {storePosts.slice(0,4).map(post => (
-            <div key={post.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:`0.5px solid ${T.border}` }}>
-              <div style={{ width:36, height:36, borderRadius:9, background:`${PLATFORMS[post.platform]?.color}18`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                {PLATFORMS[post.platform] && <PLATFORMS[post.platform].Icon size={16} color={PLATFORMS[post.platform].color} />}
-              </div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:13, color:T.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{post.caption}</div>
-                <div style={{ fontSize:11, color:T.muted, marginTop:2 }}>{post.date}</div>
-              </div>
-              <StatusBadge status={post.status} />
-              {post.status === "published" && (
-                <div style={{ display:"flex", gap:12, marginLeft:8 }}>
-                  <span style={{ display:"flex", alignItems:"center", gap:4, fontSize:12, color:T.sub }}><Heart size={12} /> {fmtNum(post.likes)}</span>
-                  <span style={{ display:"flex", alignItems:"center", gap:4, fontSize:12, color:T.sub }}><Eye size={12} /> {fmtNum(post.reach)}</span>
+          {storePosts.slice(0,4).map(post => {
+            const pl = PLATFORMS[post.platform];
+            return (
+              <div key={post.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:`0.5px solid ${T.border}` }}>
+                <div style={{ width:36, height:36, borderRadius:9, background:pl ? `${pl.color}18` : T.dark, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <PlatformIcon platform={post.platform} size={16} />
                 </div>
-              )}
-            </div>
-          ))}
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, color:T.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{post.caption}</div>
+                  <div style={{ fontSize:11, color:T.muted, marginTop:2 }}>{post.date}</div>
+                </div>
+                <StatusBadge status={post.status} />
+                {post.status === "published" && (
+                  <div style={{ display:"flex", gap:12, marginLeft:8 }}>
+                    <span style={{ display:"flex", alignItems:"center", gap:4, fontSize:12, color:T.sub }}><Heart size={12} /> {fmtNum(post.likes)}</span>
+                    <span style={{ display:"flex", alignItems:"center", gap:4, fontSize:12, color:T.sub }}><Eye size={12} /> {fmtNum(post.reach)}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </Card>
     </div>
@@ -507,24 +474,19 @@ function DashboardView({ store, posts, setView }) {
 function StoresView({ stores, setStores, setStore, setView }) {
   const [showAdd, setShowAdd] = useState(false);
   const [newStore, setNewStore] = useState({ name:"", category:"", city:"", platforms:[], color:"#7C3AED" });
+  const colors = ["#7C3AED","#06B6D4","#F59E0B","#10B981","#F43F5E","#EC4899","#3B82F6","#F97316"];
 
   function addStore() {
     if (!newStore.name || !newStore.category) return;
-    const s = {
-      ...newStore,
-      id: Date.now(), followers: 0, engagement: 0, posts: 0,
-      avatar: newStore.name.slice(0,2).toUpperCase(),
-    };
+    const s = { ...newStore, id:Date.now(), followers:0, engagement:0, posts:0, avatar:newStore.name.slice(0,2).toUpperCase() };
     setStores(prev => [...prev, s]);
     setShowAdd(false);
     setNewStore({ name:"", category:"", city:"", platforms:[], color:"#7C3AED" });
   }
 
-  const colors = ["#7C3AED","#06B6D4","#F59E0B","#10B981","#F43F5E","#EC4899","#3B82F6","#F97316"];
-
   return (
     <div>
-      <Header title="My Stores" store={stores[0] || {name:"",city:""}} actions={
+      <Header title="My Stores" store={stores[0] || { name:"", city:"" }} actions={
         <Btn onClick={() => setShowAdd(true)}><Plus size={14} /> Add Store</Btn>
       } />
 
@@ -554,10 +516,11 @@ function StoresView({ stores, setStores, setStore, setView }) {
             <div style={{ display:"flex", gap:8 }}>
               {Object.entries(PLATFORMS).map(([key, p]) => {
                 const active = newStore.platforms.includes(key);
+                const PIcon = p.Icon;
                 return (
                   <div key={key} onClick={() => setNewStore(prev => ({ ...prev, platforms: active ? prev.platforms.filter(x=>x!==key) : [...prev.platforms,key] }))}
-                    style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", borderRadius:8, cursor:"pointer", background: active ? `${p.color}20` : T.dark, border:`0.5px solid ${active ? p.color : T.border}`, fontSize:12, color: active ? p.color : T.sub, transition:"all 0.15s" }}>
-                    <p.Icon size={12} /> {p.name}
+                    style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", borderRadius:8, cursor:"pointer", background:active ? `${p.color}20` : T.dark, border:`0.5px solid ${active ? p.color : T.border}`, fontSize:12, color:active ? p.color : T.sub, transition:"all 0.15s" }}>
+                    <PIcon size={12} /> {p.name}
                   </div>
                 );
               })}
@@ -574,15 +537,12 @@ function StoresView({ stores, setStores, setStore, setView }) {
         {stores.map(s => (
           <Card key={s.id} hover style={{ padding:"1.25rem", cursor:"pointer" }} onClick={() => { setStore(s); setView("dashboard"); }}>
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
-              <div style={{ width:42, height:42, borderRadius:12, background:s.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#fff" }}>
-                {s.avatar}
-              </div>
+              <div style={{ width:42, height:42, borderRadius:12, background:s.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#fff" }}>{s.avatar}</div>
               <div>
                 <div style={{ fontSize:14, fontWeight:500, color:T.text }}>{s.name}</div>
                 <div style={{ fontSize:12, color:T.sub }}>{s.category}</div>
               </div>
             </div>
-
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
               {[
                 { label:"Followers", value:fmtNum(s.followers), color:T.primary },
@@ -596,11 +556,9 @@ function StoresView({ stores, setStores, setStore, setView }) {
                 </div>
               ))}
             </div>
-
             <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
               {s.platforms.map(p => <PlatformBadge key={p} platform={p} />)}
             </div>
-
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:12, paddingTop:12, borderTop:`0.5px solid ${T.border}` }}>
               <span style={{ fontSize:12, color:T.sub }}>View Dashboard</span>
               <ChevronRight size={14} color={T.muted} />
@@ -615,12 +573,11 @@ function StoresView({ stores, setStores, setStore, setView }) {
 // ══════════════════════════════════════════════
 // CALENDAR VIEW
 // ══════════════════════════════════════════════
-function CalendarView({ store, posts, setView, setPosts }) {
+function CalendarView({ store, posts, setView }) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selected, setSelected] = useState(null);
-
   const storePosts = posts.filter(p => p.storeId === store.id);
   const days = getDaysInMonth(year, month);
   const firstDay = getFirstDay(year, month);
@@ -638,24 +595,23 @@ function CalendarView({ store, posts, setView, setPosts }) {
         <Btn onClick={() => setView("create")}><Plus size={14} /> Schedule Post</Btn>
       } />
 
-      {/* Month nav */}
       <Card style={{ padding:"1.25rem", marginBottom:20 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
-          <button onClick={() => { if(month===0){setMonth(11);setYear(y=>y-1);}else setMonth(m=>m-1); }} style={{ background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"6px 10px", cursor:"pointer", color:T.sub, display:"flex", alignItems:"center" }}>
+          <button onClick={() => { if(month===0){setMonth(11);setYear(y=>y-1);}else setMonth(m=>m-1); }}
+            style={{ background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"6px 10px", cursor:"pointer", color:T.sub, display:"flex", alignItems:"center" }}>
             <ChevronLeft size={16} />
           </button>
           <div style={{ fontSize:16, fontWeight:500, color:T.text }}>{MONTHS[month]} {year}</div>
-          <button onClick={() => { if(month===11){setMonth(0);setYear(y=>y+1);}else setMonth(m=>m+1); }} style={{ background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"6px 10px", cursor:"pointer", color:T.sub, display:"flex", alignItems:"center" }}>
+          <button onClick={() => { if(month===11){setMonth(0);setYear(y=>y+1);}else setMonth(m=>m+1); }}
+            style={{ background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"6px 10px", cursor:"pointer", color:T.sub, display:"flex", alignItems:"center" }}>
             <ChevronRight size={16} />
           </button>
         </div>
 
-        {/* Day headers */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:4 }}>
           {DAYS.map(d => <div key={d} style={{ fontSize:11, color:T.muted, textAlign:"center", padding:"4px 0", fontWeight:500 }}>{d}</div>)}
         </div>
 
-        {/* Calendar grid */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4 }}>
           {Array(firstDay).fill(null).map((_,i) => <div key={`e${i}`} />)}
           {Array(days).fill(null).map((_,i) => {
@@ -664,23 +620,18 @@ function CalendarView({ store, posts, setView, setPosts }) {
             const isToday = d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
             const isSel = selected === d;
             return (
-              <div
-                key={d}
-                onClick={() => setSelected(isSel ? null : d)}
-                style={{
-                  minHeight:64, borderRadius:8, padding:"6px", cursor:"pointer",
-                  background: isSel ? `${T.primary}20` : (isToday ? T.dark : "transparent"),
-                  border: `0.5px solid ${isSel ? T.primary : (isToday ? T.borderH : T.border)}`,
-                  transition:"all 0.15s",
-                }}
-              >
-                <div style={{ fontSize:12, fontWeight: isToday ? 600 : 400, color: isToday ? T.primary : T.sub, marginBottom:4 }}>{d}</div>
+              <div key={d} onClick={() => setSelected(isSel ? null : d)}
+                style={{ minHeight:64, borderRadius:8, padding:"6px", cursor:"pointer", background:isSel ? `${T.primary}20` : (isToday ? T.dark : "transparent"), border:`0.5px solid ${isSel ? T.primary : (isToday ? T.borderH : T.border)}`, transition:"all 0.15s" }}>
+                <div style={{ fontSize:12, fontWeight:isToday ? 600 : 400, color:isToday ? T.primary : T.sub, marginBottom:4 }}>{d}</div>
                 <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
-                  {dayPosts.slice(0,2).map(p => (
-                    <div key={p.id} style={{ fontSize:9, padding:"2px 4px", borderRadius:3, background:`${PLATFORMS[p.platform]?.color}30`, color: PLATFORMS[p.platform]?.color, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-                      {PLATFORMS[p.platform]?.name?.split(" ")[0]}
-                    </div>
-                  ))}
+                  {dayPosts.slice(0,2).map(p => {
+                    const pl = PLATFORMS[p.platform];
+                    return (
+                      <div key={p.id} style={{ fontSize:9, padding:"2px 4px", borderRadius:3, background:pl ? `${pl.color}30` : T.dark, color:pl ? pl.color : T.sub, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                        {pl ? pl.name.split(" ")[0] : p.platform}
+                      </div>
+                    );
+                  })}
                   {dayPosts.length > 2 && <div style={{ fontSize:9, color:T.muted }}>+{dayPosts.length-2}</div>}
                 </div>
               </div>
@@ -689,12 +640,9 @@ function CalendarView({ store, posts, setView, setPosts }) {
         </div>
       </Card>
 
-      {/* Selected day posts */}
       {selected && (
         <Card style={{ padding:"1.25rem" }}>
-          <div style={{ fontSize:14, fontWeight:500, color:T.text, marginBottom:12 }}>
-            Posts on {MONTHS[month]} {selected}, {year}
-          </div>
+          <div style={{ fontSize:14, fontWeight:500, color:T.text, marginBottom:12 }}>Posts on {MONTHS[month]} {selected}, {year}</div>
           {postsOnDate(selected).length === 0 ? (
             <div style={{ textAlign:"center", padding:"20px 0", color:T.muted, fontSize:13 }}>
               No posts scheduled. <span onClick={() => setView("create")} style={{ color:T.primary, cursor:"pointer" }}>Create one →</span>
@@ -703,8 +651,8 @@ function CalendarView({ store, posts, setView, setPosts }) {
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
               {postsOnDate(selected).map(p => (
                 <div key={p.id} style={{ display:"flex", gap:12, padding:"12px", background:T.dark, borderRadius:10, border:`0.5px solid ${T.border}` }}>
-                  <div style={{ width:36, height:36, borderRadius:9, background:`${PLATFORMS[p.platform]?.color}18`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                    {PLATFORMS[p.platform] && <PLATFORMS[p.platform].Icon size={16} color={PLATFORMS[p.platform].color} />}
+                  <div style={{ width:36, height:36, borderRadius:9, background:PLATFORMS[p.platform] ? `${PLATFORMS[p.platform].color}18` : T.card, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <PlatformIcon platform={p.platform} size={16} />
                   </div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:13, color:T.text, marginBottom:4 }}>{p.caption}</div>
@@ -718,13 +666,12 @@ function CalendarView({ store, posts, setView, setPosts }) {
         </Card>
       )}
 
-      {/* Monthly summary */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginTop:16 }}>
         {[
-          { label:"Total Posts", value: String(storePosts.filter(p=>p.date.startsWith(`${year}-${String(month+1).padStart(2,"0")}`)).length), color:T.primary },
-          { label:"Published", value: String(storePosts.filter(p=>p.status==="published" && p.date.startsWith(`${year}-${String(month+1).padStart(2,"0")}`)).length), color:T.green },
-          { label:"Scheduled", value: String(storePosts.filter(p=>p.status==="scheduled").length), color:T.amber },
-          { label:"Drafts", value: String(storePosts.filter(p=>p.status==="draft").length), color:T.sub },
+          { label:"Total Posts",  value:String(storePosts.filter(p=>p.date.startsWith(`${year}-${String(month+1).padStart(2,"0")}`)).length), color:T.primary },
+          { label:"Published",    value:String(storePosts.filter(p=>p.status==="published" && p.date.startsWith(`${year}-${String(month+1).padStart(2,"0")}`)).length), color:T.green },
+          { label:"Scheduled",    value:String(storePosts.filter(p=>p.status==="scheduled").length), color:T.amber },
+          { label:"Drafts",       value:String(storePosts.filter(p=>p.status==="draft").length), color:T.sub },
         ].map(({ label, value, color }) => (
           <Card key={label} style={{ padding:"1rem", textAlign:"center" }}>
             <div style={{ fontSize:22, fontWeight:600, color, marginBottom:4 }}>{value}</div>
@@ -737,9 +684,9 @@ function CalendarView({ store, posts, setView, setPosts }) {
 }
 
 // ══════════════════════════════════════════════
-// CREATE POST VIEW (AI-powered)
+// CREATE POST VIEW
 // ══════════════════════════════════════════════
-function CreatePostView({ store, posts, setPosts }) {
+function CreatePostView({ store, setPosts }) {
   const [platform, setPlatform] = useState(store.platforms[0] || "instagram");
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState("");
@@ -751,7 +698,6 @@ function CreatePostView({ store, posts, setPosts }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
-
   const TONES = ["engaging","professional","funny","promotional","informative","inspirational"];
 
   async function generateWithAI() {
@@ -760,29 +706,11 @@ function CreatePostView({ store, posts, setPosts }) {
     setCaption(""); setHashtags("");
     try {
       const resp = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 600,
-          messages: [{
-            role: "user",
-            content: `Write a ${tone} social media post caption for ${PLATFORMS[platform]?.name || platform} for a ${store.category} business called "${store.name}".
-
-Topic/Idea: ${topic}
-
-Requirements:
-- Write an engaging caption with relevant emojis (3-5 emojis max)
-- Keep it natural and platform-appropriate
-- End with a clear call-to-action
-- Then on a new line write exactly "HASHTAGS:" followed by 6-8 relevant hashtags on the same line
-
-Format your response EXACTLY as:
-[Caption text here with emojis and CTA]
-HASHTAGS: #tag1 #tag2 #tag3 #tag4 #tag5 #tag6
-
-Only output the caption and hashtags, nothing else.`
-          }]
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens:600,
+          messages:[{ role:"user", content:`Write a ${tone} social media post caption for ${PLATFORMS[platform]?.name || platform} for a ${store.category} business called "${store.name}".\n\nTopic/Idea: ${topic}\n\nRequirements:\n- Write an engaging caption with relevant emojis (3-5 emojis max)\n- Keep it natural and platform-appropriate\n- End with a clear call-to-action\n- Then on a new line write exactly "HASHTAGS:" followed by 6-8 relevant hashtags\n\nFormat:\n[Caption text here]\nHASHTAGS: #tag1 #tag2 #tag3\n\nOnly output the caption and hashtags, nothing else.` }]
         })
       });
       const data = await resp.json();
@@ -790,7 +718,7 @@ Only output the caption and hashtags, nothing else.`
       const parts = text.split("HASHTAGS:");
       setCaption((parts[0] || "").trim());
       setHashtags(parts[1] ? "HASHTAGS: " + parts[1].trim() : "");
-    } catch (err) {
+    } catch {
       setCaption("Sorry, could not generate content. Please try again.");
     }
     setLoading(false);
@@ -801,20 +729,16 @@ Only output the caption and hashtags, nothing else.`
     setLoading(true);
     try {
       const resp = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 150,
-          messages: [{
-            role: "user",
-            content: `Generate 8 highly relevant hashtags for this ${PLATFORMS[platform]?.name} post for a ${store.category} business:\n\n"${caption}"\n\nOutput only hashtags separated by spaces, no explanation.`
-          }]
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens:150,
+          messages:[{ role:"user", content:`Generate 8 relevant hashtags for this ${PLATFORMS[platform]?.name} post for a ${store.category} business:\n\n"${caption}"\n\nOutput only hashtags separated by spaces, no explanation.` }]
         })
       });
       const data = await resp.json();
       setHashtags(data.content?.[0]?.text?.trim() || "");
-    } catch (err) {}
+    } catch {}
     setLoading(false);
   }
 
@@ -822,11 +746,7 @@ Only output the caption and hashtags, nothing else.`
     if (!caption.trim() || !date) return;
     setSaving(true);
     setTimeout(() => {
-      const newPost = {
-        id: Date.now(), storeId: store.id, platform, caption,
-        hashtags, status, date, likes:0, comments:0, reach:0,
-      };
-      setPosts(p => [...p, newPost]);
+      setPosts(p => [...p, { id:Date.now(), storeId:store.id, platform, caption, hashtags, status, date, likes:0, comments:0, reach:0 }]);
       setSaving(false); setSaved(true);
       setTimeout(() => setSaved(false), 2500);
       setCaption(""); setHashtags(""); setTopic(""); setDate("");
@@ -844,21 +764,21 @@ Only output the caption and hashtags, nothing else.`
   return (
     <div>
       <Header title="Create Post" store={store} />
-
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
-        {/* Left: Editor */}
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-          {/* Platform select */}
+          {/* Platform */}
           <Card style={{ padding:"1.25rem" }}>
             <div style={{ fontSize:13, fontWeight:500, color:T.text, marginBottom:10 }}>Select Platform</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               {store.platforms.map(p => {
                 const plt = PLATFORMS[p];
+                if (!plt) return null;
+                const PIcon = plt.Icon;
                 const active = platform === p;
                 return (
                   <div key={p} onClick={() => setPlatform(p)}
-                    style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:9, cursor:"pointer", background: active ? `${plt.color}20` : T.dark, border:`1px solid ${active ? plt.color : T.border}`, fontSize:13, color: active ? plt.color : T.sub, transition:"all 0.15s", fontWeight: active ? 500 : 400 }}>
-                    <plt.Icon size={14} /> {plt.name}
+                    style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:9, cursor:"pointer", background:active ? `${plt.color}20` : T.dark, border:`1px solid ${active ? plt.color : T.border}`, fontSize:13, color:active ? plt.color : T.sub, transition:"all 0.15s", fontWeight:active ? 500 : 400 }}>
+                    <PIcon size={14} /> {plt.name}
                   </div>
                 );
               })}
@@ -872,19 +792,16 @@ Only output the caption and hashtags, nothing else.`
             </div>
             <div style={{ marginBottom:10 }}>
               <label style={{ fontSize:12, color:T.sub, display:"block", marginBottom:5 }}>Post Topic / Idea</label>
-              <input
-                value={topic}
-                onChange={e => setTopic(e.target.value)}
-                placeholder={`e.g., New ${store.category} products, Weekend offers, Behind the scenes...`}
-                style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"9px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box" }}
-              />
+              <input value={topic} onChange={e => setTopic(e.target.value)}
+                placeholder={`e.g., New ${store.category} products, Weekend offers...`}
+                style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"9px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
             </div>
             <div style={{ marginBottom:12 }}>
               <label style={{ fontSize:12, color:T.sub, display:"block", marginBottom:5 }}>Tone</label>
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                 {TONES.map(t => (
                   <div key={t} onClick={() => setTone(t)}
-                    style={{ padding:"4px 10px", borderRadius:20, fontSize:11, cursor:"pointer", background: tone===t ? `${T.primary}25` : T.dark, border:`0.5px solid ${tone===t ? T.primary : T.border}`, color: tone===t ? T.primary : T.sub, transition:"all 0.15s", textTransform:"capitalize" }}>
+                    style={{ padding:"4px 10px", borderRadius:20, fontSize:11, cursor:"pointer", background:tone===t ? `${T.primary}25` : T.dark, border:`0.5px solid ${tone===t ? T.primary : T.border}`, color:tone===t ? T.primary : T.sub, transition:"all 0.15s", textTransform:"capitalize" }}>
                     {t}
                   </div>
                 ))}
@@ -895,24 +812,19 @@ Only output the caption and hashtags, nothing else.`
             </Btn>
           </Card>
 
-          {/* Caption Editor */}
+          {/* Caption */}
           <Card style={{ padding:"1.25rem" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
               <div style={{ fontSize:13, fontWeight:500, color:T.text }}>Caption</div>
-              <div style={{ display:"flex", gap:6 }}>
-                <button onClick={copyCaption} style={{ background:"transparent", border:"none", cursor:"pointer", color:T.sub, display:"flex", alignItems:"center", gap:4, fontSize:12 }}>
-                  {copied ? <Check size={12} color={T.green} /> : <Copy size={12} />}
-                  {copied ? "Copied!" : "Copy"}
-                </button>
-              </div>
+              <button onClick={copyCaption} style={{ background:"transparent", border:"none", cursor:"pointer", color:T.sub, display:"flex", alignItems:"center", gap:4, fontSize:12 }}>
+                {copied ? <Check size={12} color={T.green} /> : <Copy size={12} />}
+                {copied ? "Copied!" : "Copy"}
+              </button>
             </div>
-            <textarea
-              value={caption}
-              onChange={e => setCaption(e.target.value)}
+            <textarea value={caption} onChange={e => setCaption(e.target.value)}
               placeholder="Write your caption here or use AI to generate..."
               rows={5}
-              style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"10px 12px", color:T.text, fontSize:13, outline:"none", resize:"vertical", boxSizing:"border-box", fontFamily:"inherit", lineHeight:1.6 }}
-            />
+              style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"10px 12px", color:T.text, fontSize:13, outline:"none", resize:"vertical", boxSizing:"border-box", fontFamily:"inherit", lineHeight:1.6 }} />
             <div style={{ fontSize:11, color:T.muted, marginTop:6, textAlign:"right" }}>{caption.length} characters</div>
           </Card>
 
@@ -922,16 +834,14 @@ Only output the caption and hashtags, nothing else.`
               <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:13, fontWeight:500, color:T.text }}>
                 <Hash size={14} /> Hashtags
               </div>
-              <button onClick={generateHashtags} disabled={!caption.trim() || loading} style={{ background:"transparent", border:"none", cursor:"pointer", color:T.primary, fontSize:12, display:"flex", alignItems:"center", gap:4 }}>
+              <button onClick={generateHashtags} disabled={!caption.trim() || loading}
+                style={{ background:"transparent", border:"none", cursor:"pointer", color:T.primary, fontSize:12, display:"flex", alignItems:"center", gap:4 }}>
                 <RefreshCw size={11} /> {loading ? "..." : "Auto-generate"}
               </button>
             </div>
-            <input
-              value={hashtags}
-              onChange={e => setHashtags(e.target.value)}
+            <input value={hashtags} onChange={e => setHashtags(e.target.value)}
               placeholder="#hashtag1 #hashtag2 #hashtag3..."
-              style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"9px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box" }}
-            />
+              style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"9px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
           </Card>
 
           {/* Schedule */}
@@ -952,61 +862,38 @@ Only output the caption and hashtags, nothing else.`
                 </select>
               </div>
             </div>
-            <Btn
-              onClick={savePost}
-              disabled={!caption.trim() || !date || saving}
-              loading={saving}
-              style={{ width:"100%", justifyContent:"center" }}
-            >
+            <Btn onClick={savePost} disabled={!caption.trim() || !date || saving} loading={saving} style={{ width:"100%", justifyContent:"center" }}>
               {saved ? <><Check size={14} color={T.green} /> Saved!</> : <><Send size={14} /> {status === "scheduled" ? "Schedule Post" : "Save Draft"}</>}
             </Btn>
           </Card>
         </div>
 
-        {/* Right: Preview */}
+        {/* Preview */}
         <div>
           <Card style={{ padding:"1.25rem", position:"sticky", top:0 }}>
             <div style={{ fontSize:13, fontWeight:500, color:T.text, marginBottom:16 }}>Post Preview</div>
-
-            {/* Mock phone */}
             <div style={{ background:"#000", borderRadius:24, padding:"2px", maxWidth:320, margin:"0 auto", border:"2px solid #333" }}>
               <div style={{ background:"#1a1a1a", borderRadius:22, overflow:"hidden" }}>
-                {/* Platform header */}
                 <div style={{ padding:"10px 14px", borderBottom:"0.5px solid #2a2a2a", display:"flex", alignItems:"center", gap:8 }}>
-                  <div style={{ width:28, height:28, borderRadius:"50%", background:store.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:"#fff" }}>
-                    {store.avatar}
-                  </div>
+                  <div style={{ width:28, height:28, borderRadius:"50%", background:store.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:"#fff" }}>{store.avatar}</div>
                   <div>
                     <div style={{ fontSize:12, fontWeight:500, color:"#fff" }}>{store.name}</div>
                     <div style={{ fontSize:10, color:"#666" }}>{pl?.name}</div>
                   </div>
-                  <div style={{ marginLeft:"auto" }}>
-                    <MoreHorizontal size={16} color="#666" />
-                  </div>
+                  <div style={{ marginLeft:"auto" }}><MoreHorizontal size={16} color="#666" /></div>
                 </div>
-
-                {/* Image placeholder */}
-                <div style={{ background:"#111", height:200, display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
+                <div style={{ background:"#111", height:200, display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <div style={{ textAlign:"center" }}>
                     <Img size={32} color="#333" />
                     <div style={{ fontSize:11, color:"#444", marginTop:6 }}>Post Image</div>
                   </div>
-                  <div style={{ position:"absolute", bottom:8, right:10, display:"flex", gap:4 }}>
-                    <div style={{ width:6, height:6, borderRadius:3, background: pl?.color || T.primary }} />
-                    <div style={{ width:6, height:6, borderRadius:3, background:"#333" }} />
-                    <div style={{ width:6, height:6, borderRadius:3, background:"#333" }} />
-                  </div>
                 </div>
-
-                {/* Actions */}
                 <div style={{ padding:"10px 14px", display:"flex", gap:14, borderBottom:"0.5px solid #2a2a2a" }}>
                   <Heart size={18} color="#888" />
                   <MessageCircle size={18} color="#888" />
                   <Share2 size={18} color="#888" />
                   <Star size={18} color="#888" style={{ marginLeft:"auto" }} />
                 </div>
-
-                {/* Caption preview */}
                 <div style={{ padding:"10px 14px 16px" }}>
                   <div style={{ fontSize:12, color:"#fff", lineHeight:1.5, whiteSpace:"pre-wrap", maxHeight:100, overflow:"hidden" }}>
                     {caption ? (
@@ -1015,22 +902,19 @@ Only output the caption and hashtags, nothing else.`
                       <span style={{ color:"#555" }}>Your caption will appear here...</span>
                     )}
                   </div>
-                  {hashtags && (
-                    <div style={{ fontSize:11, color: pl?.color || T.primary, marginTop:6, lineHeight:1.5 }}>{hashtags}</div>
-                  )}
+                  {hashtags && <div style={{ fontSize:11, color:pl?.color || T.primary, marginTop:6, lineHeight:1.5 }}>{hashtags}</div>}
                   {date && <div style={{ fontSize:10, color:"#555", marginTop:8 }}>{date}</div>}
                 </div>
               </div>
             </div>
 
-            {/* Tips */}
             <div style={{ marginTop:16, padding:"12px", background:T.dark, borderRadius:10, border:`0.5px solid ${T.border}` }}>
               <div style={{ fontSize:11, fontWeight:500, color:T.amber, marginBottom:6 }}>💡 Best Practices</div>
-              <div style={{ fontSize:11, color:T.sub, lineHeight:1.7 }}>
+              <div style={{ fontSize:11, color:T.sub, lineHeight:1.8, whiteSpace:"pre-line" }}>
                 {platform === "instagram" && "• Post between 6-9 PM for best reach\n• Use 5-10 hashtags for optimal visibility\n• Reels get 3x more reach than photos"}
-                {platform === "facebook" && "• Post at 9 AM or 1-4 PM\n• Videos get 6x more engagement\n• Ask questions to boost comments"}
-                {platform === "twitter" && "• Tweet 1-5 times per day\n• Use 1-2 hashtags only\n• Threads perform 2x better"}
-                {platform === "linkedin" && "• Post on weekdays 8-10 AM\n• Long-form content performs best\n• Share industry insights for more reach"}
+                {platform === "facebook"  && "• Post at 9 AM or 1-4 PM\n• Videos get 6x more engagement\n• Ask questions to boost comments"}
+                {platform === "twitter"   && "• Tweet 1-5 times per day\n• Use 1-2 hashtags only\n• Threads perform 2x better"}
+                {platform === "linkedin"  && "• Post on weekdays 8-10 AM\n• Long-form content performs best\n• Share industry insights for more reach"}
               </div>
             </div>
           </Card>
@@ -1049,36 +933,29 @@ function AnalyticsView({ store, posts }) {
   const totalLikes = storePosts.reduce((a,p)=>a+p.likes,0);
   const totalReach = storePosts.reduce((a,p)=>a+p.reach,0);
   const totalComments = storePosts.reduce((a,p)=>a+p.comments,0);
-  const avgEngagement = store.engagement;
 
   return (
     <div>
       <Header title="Analytics" store={store} actions={
         <div style={{ display:"flex", gap:4, background:T.card, border:`0.5px solid ${T.border}`, borderRadius:9, padding:3 }}>
           {["1m","3m","6m","1y"].map(p => (
-            <div key={p} onClick={() => setPeriod(p)} style={{ padding:"4px 12px", borderRadius:7, fontSize:12, cursor:"pointer", background: period===p ? T.primary : "transparent", color: period===p ? "#fff" : T.sub, transition:"all 0.15s" }}>
-              {p}
-            </div>
+            <div key={p} onClick={() => setPeriod(p)} style={{ padding:"4px 12px", borderRadius:7, fontSize:12, cursor:"pointer", background:period===p ? T.primary : "transparent", color:period===p ? "#fff" : T.sub, transition:"all 0.15s" }}>{p}</div>
           ))}
         </div>
       } />
 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom:24 }}>
-        <StatCard label="Total Reach" value={fmtNum(totalReach)} icon={Eye} color={T.cyan} trend={12.3} />
-        <StatCard label="Total Likes" value={fmtNum(totalLikes)} icon={Heart} color={T.pink} trend={8.7} />
-        <StatCard label="Comments" value={fmtNum(totalComments)} icon={MessageCircle} color={T.amber} trend={5.2} />
-        <StatCard label="Avg Engagement" value={`${avgEngagement}%`} icon={TrendingUp} color={T.green} trend={2.1} />
+        <StatCard label="Total Reach"     value={fmtNum(totalReach)}    icon={Eye}           color={T.cyan}  trend={12.3} />
+        <StatCard label="Total Likes"     value={fmtNum(totalLikes)}    icon={Heart}         color={T.pink}  trend={8.7} />
+        <StatCard label="Comments"        value={fmtNum(totalComments)} icon={MessageCircle} color={T.amber} trend={5.2} />
+        <StatCard label="Avg Engagement"  value={`${store.engagement}%`} icon={TrendingUp}   color={T.green} trend={2.1} />
       </div>
 
-      {/* Growth chart */}
       <Card style={{ padding:"1.25rem", marginBottom:16 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
           <div>
             <div style={{ fontSize:14, fontWeight:500, color:T.text, marginBottom:2 }}>Follower Growth</div>
             <div style={{ fontSize:12, color:T.sub }}>Audience growth over time</div>
-          </div>
-          <div style={{ display:"flex", gap:16 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:T.sub }}><div style={{ width:8, height:2, background:T.primary, borderRadius:1 }} /> Followers</div>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={220}>
@@ -1092,7 +969,6 @@ function AnalyticsView({ store, posts }) {
       </Card>
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
-        {/* Engagement trend */}
         <Card style={{ padding:"1.25rem" }}>
           <div style={{ fontSize:14, fontWeight:500, color:T.text, marginBottom:4 }}>Engagement Rate</div>
           <div style={{ fontSize:12, color:T.sub, marginBottom:16 }}>Monthly average %</div>
@@ -1112,20 +988,21 @@ function AnalyticsView({ store, posts }) {
           </ResponsiveContainer>
         </Card>
 
-        {/* Platform breakdown */}
         <Card style={{ padding:"1.25rem" }}>
           <div style={{ fontSize:14, fontWeight:500, color:T.text, marginBottom:4 }}>Platform Breakdown</div>
           <div style={{ fontSize:12, color:T.sub, marginBottom:16 }}>Posts by platform</div>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {store.platforms.map(p => {
               const pl = PLATFORMS[p];
+              if (!pl) return null;
               const cnt = storePosts.filter(x=>x.platform===p).length;
               const pct = storePosts.length ? Math.round((cnt/storePosts.length)*100) : 0;
+              const PlIcon = pl.Icon;
               return (
                 <div key={p}>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <pl.Icon size={13} color={pl.color} />
+                      <PlIcon size={13} color={pl.color} />
                       <span style={{ fontSize:12, color:T.text }}>{pl.name}</span>
                     </div>
                     <span style={{ fontSize:12, color:T.sub }}>{pct}%</span>
@@ -1140,29 +1017,29 @@ function AnalyticsView({ store, posts }) {
         </Card>
       </div>
 
-      {/* Best performing posts */}
       <Card style={{ padding:"1.25rem" }}>
         <div style={{ fontSize:14, fontWeight:500, color:T.text, marginBottom:16 }}>Top Performing Posts</div>
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-          {storePosts.sort((a,b)=>b.reach-a.reach).slice(0,4).map(post => (
-            <div key={post.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 12px", background:T.dark, borderRadius:10, border:`0.5px solid ${T.border}` }}>
-              <div style={{ width:34, height:34, borderRadius:9, background:`${PLATFORMS[post.platform]?.color}18`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                {PLATFORMS[post.platform] && <PLATFORMS[post.platform].Icon size={15} color={PLATFORMS[post.platform].color} />}
+          {storePosts.sort((a,b)=>b.reach-a.reach).slice(0,4).map(post => {
+            const pl = PLATFORMS[post.platform];
+            return (
+              <div key={post.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 12px", background:T.dark, borderRadius:10, border:`0.5px solid ${T.border}` }}>
+                <div style={{ width:34, height:34, borderRadius:9, background:pl ? `${pl.color}18` : T.card, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <PlatformIcon platform={post.platform} size={15} />
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:12, color:T.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{post.caption}</div>
+                  <div style={{ fontSize:11, color:T.muted }}>{post.date}</div>
+                </div>
+                <div style={{ display:"flex", gap:14, flexShrink:0 }}>
+                  <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:12, color:T.sub }}><Eye size={11} /> {fmtNum(post.reach)}</span>
+                  <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:12, color:T.sub }}><Heart size={11} /> {fmtNum(post.likes)}</span>
+                  <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:12, color:T.sub }}><MessageCircle size={11} /> {post.comments}</span>
+                </div>
               </div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:12, color:T.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{post.caption}</div>
-                <div style={{ fontSize:11, color:T.muted }}>{post.date}</div>
-              </div>
-              <div style={{ display:"flex", gap:14, flexShrink:0 }}>
-                <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:12, color:T.sub }}><Eye size={11} /> {fmtNum(post.reach)}</span>
-                <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:12, color:T.sub }}><Heart size={11} /> {fmtNum(post.likes)}</span>
-                <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:12, color:T.sub }}><MessageCircle size={11} /> {post.comments}</span>
-              </div>
-            </div>
-          ))}
-          {storePosts.length === 0 && (
-            <div style={{ textAlign:"center", padding:"20px 0", color:T.muted, fontSize:13 }}>No published posts yet.</div>
-          )}
+            );
+          })}
+          {storePosts.length === 0 && <div style={{ textAlign:"center", padding:"20px 0", color:T.muted, fontSize:13 }}>No published posts yet.</div>}
         </div>
       </Card>
     </div>
@@ -1174,16 +1051,12 @@ function AnalyticsView({ store, posts }) {
 // ══════════════════════════════════════════════
 function SettingsView({ store }) {
   const [saved, setSaved] = useState(false);
-  function save() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
+  function save() { setSaved(true); setTimeout(() => setSaved(false), 2000); }
   return (
     <div>
       <Header title="Settings" store={store} />
       <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:20 }}>
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-          {/* Profile */}
           <Card style={{ padding:"1.5rem" }}>
             <div style={{ fontSize:14, fontWeight:500, color:T.text, marginBottom:16 }}>Account Settings</div>
             <div style={{ display:"grid", gap:12 }}>
@@ -1199,22 +1072,20 @@ function SettingsView({ store }) {
             </Btn>
           </Card>
 
-          {/* Platform connections */}
           <Card style={{ padding:"1.5rem" }}>
             <div style={{ fontSize:14, fontWeight:500, color:T.text, marginBottom:16 }}>Connected Platforms</div>
             <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
               {Object.entries(PLATFORMS).map(([key, pl]) => {
                 const connected = store.platforms.includes(key);
+                const PlIcon = pl.Icon;
                 return (
                   <div key={key} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", background:T.dark, borderRadius:10, border:`0.5px solid ${connected ? `${pl.color}40` : T.border}` }}>
                     <div style={{ width:36, height:36, borderRadius:9, background:`${pl.color}18`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                      <pl.Icon size={18} color={pl.color} />
+                      <PlIcon size={18} color={pl.color} />
                     </div>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:13, fontWeight:500, color:T.text }}>{pl.name}</div>
-                      <div style={{ fontSize:11, color: connected ? T.green : T.muted }}>
-                        {connected ? "✓ Connected" : "Not connected"}
-                      </div>
+                      <div style={{ fontSize:11, color:connected ? T.green : T.muted }}>{connected ? "✓ Connected" : "Not connected"}</div>
                     </div>
                     <Btn variant={connected ? "ghost" : "primary"} style={{ padding:"5px 14px", fontSize:12 }}>
                       {connected ? "Disconnect" : "Connect"}
@@ -1226,7 +1097,6 @@ function SettingsView({ store }) {
           </Card>
         </div>
 
-        {/* Right: Subscription */}
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
           <Card style={{ padding:"1.5rem" }}>
             <div style={{ fontSize:14, fontWeight:500, color:T.text, marginBottom:4 }}>Current Plan</div>
@@ -1286,21 +1156,14 @@ export default function App() {
         ::-webkit-scrollbar-thumb { background: #2d3554; border-radius: 2px; }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
-
-      <Sidebar
-        view={view} setView={setView}
-        store={store} setStore={setStore}
-        stores={stores}
-        collapsed={collapsed} setCollapsed={setCollapsed}
-      />
-
+      <Sidebar view={view} setView={setView} store={store} setStore={setStore} stores={stores} collapsed={collapsed} setCollapsed={setCollapsed} />
       <main style={{ flex:1, overflow:"auto", padding:"28px 32px" }}>
         {view === "dashboard" && <DashboardView store={store} posts={posts} setView={setView} />}
-        {view === "stores" && <StoresView stores={stores} setStores={setStores} setStore={setStore} setView={setView} />}
-        {view === "calendar" && <CalendarView store={store} posts={posts} setView={setView} setPosts={setPosts} />}
-        {view === "create" && <CreatePostView store={store} posts={posts} setPosts={setPosts} />}
+        {view === "stores"    && <StoresView stores={stores} setStores={setStores} setStore={setStore} setView={setView} />}
+        {view === "calendar"  && <CalendarView store={store} posts={posts} setView={setView} setPosts={setPosts} />}
+        {view === "create"    && <CreatePostView store={store} posts={posts} setPosts={setPosts} />}
         {view === "analytics" && <AnalyticsView store={store} posts={posts} />}
-        {view === "settings" && <SettingsView store={store} />}
+        {view === "settings"  && <SettingsView store={store} />}
       </main>
     </div>
   );
