@@ -178,7 +178,7 @@ function Btn({ children, onClick, variant = "primary", style, disabled, loading 
         padding:"8px 16px", borderRadius:10, fontSize:13, fontWeight:500,
         border: `0.5px solid ${variant === "primary" ? T.primary : T.border}`,
         background: bg, color: variant === "primary" ? "#fff" : T.text,
-        cursor: disabled ? "not-allowed", transition:"all 0.15s",
+        cursor: disabled ? "not-allowed" : "pointer", transition:"all 0.15s",
         opacity: disabled ? 0.5 : 1,
         ...style
       }}
