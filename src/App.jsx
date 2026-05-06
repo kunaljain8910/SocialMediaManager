@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, LineChart, Line
@@ -1182,10 +1182,28 @@ function Footer() {
 // ══════════════════════════════════════════════
 export default function App() {
   const [view,      setView]      = useState("dashboard");
-  const [stores,    setStores]    = useState(INIT_STORES);
+  const [stores, setStores] = useState(() => {
+  try {
+    const saved = localStorage.getItem('rasaya_stores');
+    return saved ? JSON.parse(saved) : INIT_STORES;
+  } catch { return INIT_STORES; }
+  });
   const [store,     setStore]     = useState(INIT_STORES[0]);
-  const [posts,     setPosts]     = useState(INIT_POSTS);
+  const [posts, setPosts] = useState(() => {
+  try {
+    const saved = localStorage.getItem('rasaya_posts');
+    return saved ? JSON.parse(saved) : INIT_POSTS;
+  } catch { return INIT_POSTS; }
+  });
   const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+  localStorage.setItem('rasaya_stores', JSON.stringify(stores));
+}, [stores]);
+
+useEffect(() => {
+  localStorage.setItem('rasaya_posts', JSON.stringify(posts));
+}, [posts]);
 
   return (
     <div style={{ display:"flex", height:"100vh", background:T.bg, color:T.text, fontFamily:"'Outfit', 'Segoe UI', system-ui, sans-serif", overflow:"hidden" }}>
