@@ -9,12 +9,10 @@ import {
   Eye, Heart, MessageCircle, TrendingUp, Users, Bell, ChevronDown, Loader2,
   ChevronLeft, ChevronRight, Send, Hash, Globe,
   Zap, LogOut, RefreshCw, Copy, Check, Menu, MoreHorizontal,
-  AlertCircle, ArrowUpRight, Share2, Star, Image as Img
+  AlertCircle, ArrowUpRight, Share2, Star, Image as Img,
+  Trash2, Edit3, X, Save
 } from "lucide-react";
 
-// ══════════════════════════════════════════════
-// RASAYA DESIGN TOKENS — Gold / Navy Theme
-// ══════════════════════════════════════════════
 const T = {
   bg:          "#080c18",
   sidebar:     "#0d1526",
@@ -53,16 +51,13 @@ const NAV = [
   { id: "settings",  label: "Settings",           Icon: Settings2       },
 ];
 
-// ══════════════════════════════════════════════
-// DEMO DATA
-// ══════════════════════════════════════════════
-const INIT_STORES = [
+const DEMO_STORES = [
   { id: 1, name: "Fashion Hub",    category: "Fashion & Clothing",   platforms: ["instagram","facebook"],            followers: 12400, engagement: 4.2, posts: 89,  color: "#c9a84c", avatar: "FH", city: "Indore" },
   { id: 2, name: "Tech Corner",    category: "Electronics",           platforms: ["instagram","twitter","linkedin"],  followers: 8900,  engagement: 3.8, posts: 134, color: "#06B6D4", avatar: "TC", city: "Bhopal" },
   { id: 3, name: "Foodie Palace",  category: "Restaurant & Food",     platforms: ["instagram","facebook"],            followers: 23100, engagement: 6.1, posts: 267, color: "#10B981", avatar: "FP", city: "Indore" },
 ];
 
-const INIT_POSTS = [
+const DEMO_POSTS = [
   { id: 1, storeId: 1, platform: "instagram", caption: "New summer collection is here! ☀️ Check out our latest arrivals — styles that speak for themselves. Visit us in store or shop online.", hashtags: "#fashion #summer #newcollection", status: "published", date: "2025-04-28", likes: 342, comments: 28, reach: 4200 },
   { id: 2, storeId: 1, platform: "facebook",  caption: "Weekend SALE! 🎉 30% off on all items. Don't miss this limited offer. Visit us today!", hashtags: "#sale #weekend #discount", status: "published", date: "2025-04-27", likes: 156, comments: 12, reach: 2100 },
   { id: 3, storeId: 1, platform: "instagram", caption: "Behind the scenes 🎬 Watch how our team curates the latest trends just for you!", hashtags: "#bts #fashion #behindthescenes", status: "scheduled", date: "2025-05-03", likes: 0, comments: 0, reach: 0 },
@@ -93,9 +88,6 @@ const WEEKLY_DATA = [
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-// ══════════════════════════════════════════════
-// UTILITY
-// ══════════════════════════════════════════════
 function fmtNum(n) {
   if (n >= 1000000) return (n/1000000).toFixed(1)+"M";
   if (n >= 1000)    return (n/1000).toFixed(1)+"K";
@@ -111,9 +103,6 @@ function PlatformIcon({ platform, size = 16 }) {
   return <Icon size={size} color={color} />;
 }
 
-// ══════════════════════════════════════════════
-// SMALL COMPONENTS
-// ══════════════════════════════════════════════
 function PlatformBadge({ platform }) {
   const p = PLATFORMS[platform];
   if (!p) return null;
@@ -159,6 +148,7 @@ function Card({ children, style, onClick, hover }) {
 function Btn({ children, onClick, variant = "primary", style, disabled, loading }) {
   const [hov, setHov] = useState(false);
   const bg = variant === "primary" ? (hov ? T.primaryH : T.primary)
+           : variant === "danger"  ? (hov ? "#c0001e" : T.red)
            : variant === "ghost"   ? (hov ? T.dark : "transparent")
            : T.card;
   return (
@@ -170,8 +160,8 @@ function Btn({ children, onClick, variant = "primary", style, disabled, loading 
       style={{
         display:"inline-flex", alignItems:"center", gap:6,
         padding:"8px 16px", borderRadius:10, fontSize:13, fontWeight:600,
-        border:`0.5px solid ${variant === "primary" ? T.primary : T.border}`,
-        background:bg, color:variant === "primary" ? T.bg : T.text,
+        border:`0.5px solid ${variant === "primary" ? T.primary : variant === "danger" ? T.red : T.border}`,
+        background:bg, color:variant === "primary" ? T.bg : variant === "danger" ? "#fff" : T.text,
         cursor: disabled ? "not-allowed" : "pointer",
         transition:"all 0.15s", opacity:disabled ? 0.5 : 1,
         letterSpacing:"0.3px",
@@ -205,20 +195,80 @@ function StatCard({ label, value, sub, icon: Icon, color, trend }) {
   );
 }
 
-// ══════════════════════════════════════════════
-// SIDEBAR
-// ══════════════════════════════════════════════
+// ── CONFIRM MODAL ──
+function ConfirmModal({ message, onConfirm, onCancel }) {
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ background:T.card, border:`0.5px solid ${T.border}`, borderRadius:16, padding:"1.5rem", maxWidth:360, width:"90%" }}>
+        <div style={{ fontSize:15, color:T.text, marginBottom:20, lineHeight:1.6 }}>{message}</div>
+        <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+          <Btn variant="ghost" onClick={onCancel}>Cancel</Btn>
+          <Btn variant="danger" onClick={onConfirm}><Trash2 size={13} /> Delete</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── EDIT POST MODAL ──
+function EditPostModal({ post, onSave, onClose }) {
+  const [caption,  setCaption]  = useState(post.caption);
+  const [hashtags, setHashtags] = useState(post.hashtags);
+  const [date,     setDate]     = useState(post.date);
+  const [status,   setStatus]   = useState(post.status);
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ background:T.card, border:`0.5px solid ${T.border}`, borderRadius:16, padding:"1.5rem", width:480, maxWidth:"95%" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <div style={{ fontSize:16, fontWeight:600, color:T.text, fontFamily:"'Cormorant Garamond', serif" }}>Edit Post</div>
+          <button onClick={onClose} style={{ background:"transparent", border:"none", cursor:"pointer", color:T.sub }}><X size={18} /></button>
+        </div>
+        <div style={{ marginBottom:12 }}>
+          <label style={{ fontSize:12, color:T.sub, display:"block", marginBottom:5 }}>Caption</label>
+          <textarea value={caption} onChange={e => setCaption(e.target.value)} rows={4}
+            style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"9px 12px", color:T.text, fontSize:13, outline:"none", resize:"vertical", boxSizing:"border-box", fontFamily:"inherit" }} />
+        </div>
+        <div style={{ marginBottom:12 }}>
+          <label style={{ fontSize:12, color:T.sub, display:"block", marginBottom:5 }}>Hashtags</label>
+          <input value={hashtags} onChange={e => setHashtags(e.target.value)}
+            style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"9px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
+          <div>
+            <label style={{ fontSize:12, color:T.sub, display:"block", marginBottom:5 }}>Date</label>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)}
+              style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"8px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box", colorScheme:"dark" }} />
+          </div>
+          <div>
+            <label style={{ fontSize:12, color:T.sub, display:"block", marginBottom:5 }}>Status</label>
+            <select value={status} onChange={e => setStatus(e.target.value)}
+              style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"8px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box" }}>
+              <option value="published">Published</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="draft">Draft</option>
+            </select>
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+          <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
+          <Btn onClick={() => onSave({ ...post, caption, hashtags, date, status })}><Save size={13} /> Save Changes</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SIDEBAR ──
 function Sidebar({ view, setView, store, setStore, stores, collapsed, setCollapsed }) {
   const [storeOpen, setStoreOpen] = useState(false);
   return (
     <aside style={{
       width:collapsed ? 72 : 240, minWidth:collapsed ? 72 : 240,
-      background:T.sidebar,
-      borderRight:`0.5px solid ${T.border}`,
+      background:T.sidebar, borderRight:`0.5px solid ${T.border}`,
       display:"flex", flexDirection:"column", transition:"all 0.25s ease",
       position:"relative", zIndex:10,
     }}>
-      {/* Logo */}
       <div style={{ padding:collapsed ? "20px 0" : "20px 20px", borderBottom:`0.5px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:collapsed ? "center" : "space-between" }}>
         {!collapsed && (
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -241,13 +291,10 @@ function Sidebar({ view, setView, store, setStore, stores, collapsed, setCollaps
         </button>
       </div>
 
-      {/* Store selector */}
       {!collapsed && (
         <div style={{ padding:"12px 12px 0" }}>
-          <div
-            onClick={() => setStoreOpen(!storeOpen)}
-            style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 10px", borderRadius:10, cursor:"pointer", background:storeOpen ? T.dark : "transparent", border:`0.5px solid ${storeOpen ? T.borderH : T.border}`, transition:"all 0.15s" }}
-          >
+          <div onClick={() => setStoreOpen(!storeOpen)}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 10px", borderRadius:10, cursor:"pointer", background:storeOpen ? T.dark : "transparent", border:`0.5px solid ${storeOpen ? T.borderH : T.border}`, transition:"all 0.15s" }}>
             <div style={{ width:28, height:28, borderRadius:7, background:store.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:T.bg, flexShrink:0 }}>
               {store.avatar}
             </div>
@@ -268,7 +315,7 @@ function Sidebar({ view, setView, store, setStore, stores, collapsed, setCollaps
                 </div>
               ))}
               <div style={{ borderTop:`0.5px solid ${T.border}`, padding:"8px 10px" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:T.primary, cursor:"pointer" }}>
+                <div onClick={() => { setStoreOpen(false); setView("stores"); }} style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:T.primary, cursor:"pointer" }}>
                   <Plus size={12} /> Add new store
                 </div>
               </div>
@@ -277,14 +324,12 @@ function Sidebar({ view, setView, store, setStore, stores, collapsed, setCollaps
         </div>
       )}
 
-      {/* Nav */}
       <nav style={{ flex:1, padding:collapsed ? "12px 8px" : "12px 12px", display:"flex", flexDirection:"column", gap:2 }}>
         {NAV.map(({ id, label, Icon }) => (
           <NavItem key={id} id={id} label={label} Icon={Icon} active={view === id} collapsed={collapsed} onClick={() => setView(id)} />
         ))}
       </nav>
 
-      {/* User */}
       <div style={{ padding:collapsed ? "12px 8px" : "12px 12px", borderTop:`0.5px solid ${T.border}` }}>
         {collapsed ? (
           <div onClick={() => setCollapsed(false)} style={{ display:"flex", justifyContent:"center", cursor:"pointer" }}>
@@ -326,9 +371,7 @@ function NavItem({ label, Icon, active, collapsed, onClick }) {
   );
 }
 
-// ══════════════════════════════════════════════
-// HEADER
-// ══════════════════════════════════════════════
+// ── HEADER ──
 function Header({ title, store, actions }) {
   return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
@@ -347,16 +390,28 @@ function Header({ title, store, actions }) {
   );
 }
 
-// ══════════════════════════════════════════════
-// DASHBOARD VIEW
-// ══════════════════════════════════════════════
-function DashboardView({ store, posts, setView }) {
+// ── DASHBOARD ──
+function DashboardView({ store, posts, setPosts, setView }) {
   const storePosts = posts.filter(p => p.storeId === store.id);
   const published  = storePosts.filter(p => p.status === "published");
   const scheduled  = storePosts.filter(p => p.status === "scheduled");
+  const [editPost, setEditPost] = useState(null);
+  const [delPost,  setDelPost]  = useState(null);
+
+  function handleDeletePost(post) {
+    setPosts(prev => prev.filter(p => p.id !== post.id));
+    setDelPost(null);
+  }
+  function handleEditSave(updated) {
+    setPosts(prev => prev.map(p => p.id === updated.id ? updated : p));
+    setEditPost(null);
+  }
 
   return (
     <div>
+      {editPost && <EditPostModal post={editPost} onSave={handleEditSave} onClose={() => setEditPost(null)} />}
+      {delPost  && <ConfirmModal message={`"${delPost.caption.slice(0,60)}..." — yeh post permanently delete ho jayegi.`} onConfirm={() => handleDeletePost(delPost)} onCancel={() => setDelPost(null)} />}
+
       <Header title="Dashboard" store={store} actions={
         <Btn onClick={() => setView("create")}><Plus size={14} /> New Post</Btn>
       } />
@@ -368,10 +423,9 @@ function DashboardView({ store, posts, setView }) {
         <StatCard label="Posts Scheduled"  value={String(scheduled.length)} icon={Clock}        color={T.amber}   sub="Upcoming" />
       </div>
 
-      {/* Charts */}
       <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:16, marginBottom:24 }}>
         <Card style={{ padding:"1.25rem" }}>
-          <div style={{ fontSize:14, fontWeight:600, color:T.text, marginBottom:4, fontFamily:"'Cormorant Garamond', serif", fontSize:16 }}>Follower Growth</div>
+          <div style={{ fontSize:16, fontWeight:600, color:T.text, marginBottom:4, fontFamily:"'Cormorant Garamond', serif" }}>Follower Growth</div>
           <div style={{ fontSize:12, color:T.sub, marginBottom:16 }}>Last 6 months</div>
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={GROWTH_DATA} margin={{ top:0, right:0, bottom:0, left:-20 }}>
@@ -394,7 +448,7 @@ function DashboardView({ store, posts, setView }) {
           <div style={{ fontSize:12, color:T.sub, marginBottom:16 }}>Active connections</div>
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
             {store.platforms.map(p => {
-              const pl = PLATFORMS[p];
+              const pl     = PLATFORMS[p];
               if (!pl) return null;
               const pPosts = storePosts.filter(x => x.platform === p);
               const pct    = Math.round((pPosts.length / Math.max(storePosts.length, 1)) * 100);
@@ -418,7 +472,6 @@ function DashboardView({ store, posts, setView }) {
         </Card>
       </div>
 
-      {/* Weekly reach */}
       <Card style={{ padding:"1.25rem", marginBottom:24 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
           <div>
@@ -437,7 +490,6 @@ function DashboardView({ store, posts, setView }) {
         </ResponsiveContainer>
       </Card>
 
-      {/* Recent Posts */}
       <Card style={{ padding:"1.25rem" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
           <div style={{ fontSize:14, fontWeight:500, color:T.text }}>Recent Posts</div>
@@ -462,45 +514,76 @@ function DashboardView({ store, posts, setView }) {
                     <span style={{ display:"flex", alignItems:"center", gap:4, fontSize:12, color:T.sub }}><Eye size={12} /> {fmtNum(post.reach)}</span>
                   </div>
                 )}
+                <div style={{ display:"flex", gap:6, marginLeft:8 }}>
+                  <button onClick={() => setEditPost(post)} style={{ background:"transparent", border:"none", cursor:"pointer", color:T.muted, padding:4, borderRadius:6, display:"flex" }} title="Edit">
+                    <Edit3 size={13} />
+                  </button>
+                  <button onClick={() => setDelPost(post)} style={{ background:"transparent", border:"none", cursor:"pointer", color:T.red, padding:4, borderRadius:6, display:"flex", opacity:0.6 }} title="Delete">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
             );
           })}
+          {storePosts.length === 0 && (
+            <div style={{ textAlign:"center", padding:"20px 0", color:T.muted, fontSize:13 }}>
+              Koi post nahi hai. <span onClick={() => setView("create")} style={{ color:T.primary, cursor:"pointer" }}>Pehli post banao →</span>
+            </div>
+          )}
         </div>
       </Card>
     </div>
   );
 }
 
-// ══════════════════════════════════════════════
-// STORES VIEW
-// ══════════════════════════════════════════════
-function StoresView({ stores, setStores, setStore, setView }) {
-  const [showAdd, setShowAdd] = useState(false);
-  const [newStore, setNewStore] = useState({ name:"", category:"", city:"", platforms:[], color:"#c9a84c" });
+// ── STORES VIEW ──
+function StoresView({ stores, setStores, store, setStore, setView, posts }) {
+  const [showAdd,  setShowAdd]  = useState(false);
+  const [editMode, setEditMode] = useState(null);
+  const [delStore, setDelStore] = useState(null);
+  const EMPTY = { name:"", category:"", city:"", platforms:[], color:"#c9a84c" };
+  const [form, setForm] = useState(EMPTY);
   const colors = ["#c9a84c","#06B6D4","#F59E0B","#10B981","#F43F5E","#a29bfe","#3B82F6","#F97316"];
 
-  function addStore() {
-    if (!newStore.name || !newStore.category) return;
-    const s = { ...newStore, id:Date.now(), followers:0, engagement:0, posts:0, avatar:newStore.name.slice(0,2).toUpperCase() };
-    setStores(prev => [...prev, s]);
-    setShowAdd(false);
-    setNewStore({ name:"", category:"", city:"", platforms:[], color:"#c9a84c" });
+  function openAdd() { setForm(EMPTY); setEditMode(null); setShowAdd(true); }
+  function openEdit(s, e) { e.stopPropagation(); setForm({ name:s.name, category:s.category, city:s.city, platforms:[...s.platforms], color:s.color }); setEditMode(s.id); setShowAdd(true); }
+
+  function saveStore() {
+    if (!form.name.trim() || !form.category.trim()) return;
+    if (editMode) {
+      setStores(prev => prev.map(s => s.id === editMode ? { ...s, ...form, avatar:form.name.slice(0,2).toUpperCase() } : s));
+      if (store.id === editMode) setStore(s => ({ ...s, ...form, avatar:form.name.slice(0,2).toUpperCase() }));
+    } else {
+      const ns = { ...form, id:Date.now(), followers:0, engagement:0, posts:0, avatar:form.name.slice(0,2).toUpperCase() };
+      setStores(prev => [...prev, ns]);
+    }
+    setShowAdd(false); setEditMode(null); setForm(EMPTY);
+  }
+
+  function deleteStore(s) {
+    const remaining = stores.filter(x => x.id !== s.id);
+    setStores(remaining);
+    if (store.id === s.id && remaining.length > 0) setStore(remaining[0]);
+    setDelStore(null);
   }
 
   return (
     <div>
-      <Header title="My Stores" store={stores[0] || { name:"", city:"" }} actions={
-        <Btn onClick={() => setShowAdd(true)}><Plus size={14} /> Add Store</Btn>
+      {delStore && <ConfirmModal message={`"${delStore.name}" store aur uski saari posts permanently delete ho jayengi.`} onConfirm={() => deleteStore(delStore)} onCancel={() => setDelStore(null)} />}
+
+      <Header title="My Stores" store={store} actions={
+        <Btn onClick={openAdd}><Plus size={14} /> Add Store</Btn>
       } />
 
       {showAdd && (
         <Card style={{ padding:"1.5rem", marginBottom:20, border:`0.5px solid ${T.primary}40` }}>
-          <div style={{ fontSize:16, fontWeight:600, color:T.text, marginBottom:16, fontFamily:"'Cormorant Garamond', serif" }}>Add New Store</div>
+          <div style={{ fontSize:16, fontWeight:600, color:T.text, marginBottom:16, fontFamily:"'Cormorant Garamond', serif" }}>{editMode ? "Edit Store" : "Add New Store"}</div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             {[["Store Name","name"],["Category","category"],["City","city"]].map(([label, key]) => (
               <div key={key}>
                 <label style={{ fontSize:12, color:T.sub, display:"block", marginBottom:5 }}>{label}</label>
-                <input value={newStore[key]} onChange={e => setNewStore(p => ({...p,[key]:e.target.value}))}
+                <input value={form[key]} onChange={e => setForm(p => ({...p,[key]:e.target.value}))}
+                  placeholder={label}
                   style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"8px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
               </div>
             ))}
@@ -508,20 +591,20 @@ function StoresView({ stores, setStores, setStore, setView }) {
               <label style={{ fontSize:12, color:T.sub, display:"block", marginBottom:5 }}>Brand Color</label>
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                 {colors.map(c => (
-                  <div key={c} onClick={() => setNewStore(p => ({...p, color:c}))}
-                    style={{ width:22, height:22, borderRadius:5, background:c, cursor:"pointer", border:`2px solid ${newStore.color === c ? "#fff" : "transparent"}`, transition:"border 0.15s" }} />
+                  <div key={c} onClick={() => setForm(p => ({...p, color:c}))}
+                    style={{ width:22, height:22, borderRadius:5, background:c, cursor:"pointer", border:`2px solid ${form.color === c ? "#fff" : "transparent"}`, transition:"border 0.15s" }} />
                 ))}
               </div>
             </div>
           </div>
           <div style={{ marginBottom:12 }}>
-            <label style={{ fontSize:12, color:T.sub, display:"block", marginBottom:5 }}>Platforms</label>
-            <div style={{ display:"flex", gap:8 }}>
+            <label style={{ fontSize:12, color:T.sub, display:"block", marginBottom:5 }}>Platforms (jo use karte ho)</label>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               {Object.entries(PLATFORMS).map(([key, p]) => {
-                const active = newStore.platforms.includes(key);
+                const active = form.platforms.includes(key);
                 const PIcon  = p.Icon;
                 return (
-                  <div key={key} onClick={() => setNewStore(prev => ({ ...prev, platforms: active ? prev.platforms.filter(x=>x!==key) : [...prev.platforms,key] }))}
+                  <div key={key} onClick={() => setForm(prev => ({ ...prev, platforms: active ? prev.platforms.filter(x=>x!==key) : [...prev.platforms,key] }))}
                     style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", borderRadius:8, cursor:"pointer", background:active ? `${p.color}20` : T.dark, border:`0.5px solid ${active ? p.color : T.border}`, fontSize:12, color:active ? p.color : T.sub, transition:"all 0.15s" }}>
                     <PIcon size={12} /> {p.name}
                   </div>
@@ -530,57 +613,81 @@ function StoresView({ stores, setStores, setStore, setView }) {
             </div>
           </div>
           <div style={{ display:"flex", gap:8 }}>
-            <Btn onClick={addStore}>Save Store</Btn>
-            <Btn variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Btn>
+            <Btn onClick={saveStore} disabled={!form.name.trim() || !form.category.trim()}>{editMode ? "Update Store" : "Save Store"}</Btn>
+            <Btn variant="ghost" onClick={() => { setShowAdd(false); setEditMode(null); setForm(EMPTY); }}>Cancel</Btn>
           </div>
         </Card>
       )}
 
+      {stores.length === 0 && (
+        <div style={{ textAlign:"center", padding:"60px 20px", color:T.muted }}>
+          <Building2 size={40} color={T.muted} style={{ marginBottom:12 }} />
+          <div style={{ fontSize:15, color:T.sub, marginBottom:8 }}>Koi store nahi hai abhi</div>
+          <Btn onClick={openAdd}><Plus size={14} /> Pehla Store Banao</Btn>
+        </div>
+      )}
+
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-        {stores.map(s => (
-          <Card key={s.id} hover style={{ padding:"1.25rem", cursor:"pointer" }} onClick={() => { setStore(s); setView("dashboard"); }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
-              <div style={{ width:42, height:42, borderRadius:12, background:s.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:T.bg }}>{s.avatar}</div>
-              <div>
-                <div style={{ fontSize:14, fontWeight:600, color:T.text }}>{s.name}</div>
-                <div style={{ fontSize:12, color:T.sub }}>{s.category}</div>
-              </div>
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
-              {[
-                { label:"Followers",  value:fmtNum(s.followers), color:T.primary },
-                { label:"Engagement", value:`${s.engagement}%`,  color:T.cyan    },
-                { label:"Posts",      value:String(s.posts),     color:T.green   },
-                { label:"City",       value:s.city,              color:T.amber   },
-              ].map(({ label, value, color }) => (
-                <div key={label} style={{ background:T.dark, borderRadius:8, padding:"8px 10px" }}>
-                  <div style={{ fontSize:11, color:T.muted, marginBottom:2 }}>{label}</div>
-                  <div style={{ fontSize:13, fontWeight:500, color }}>{value}</div>
+        {stores.map(s => {
+          const storePosts = posts.filter(p => p.storeId === s.id);
+          return (
+            <Card key={s.id} hover style={{ padding:"1.25rem", cursor:"pointer" }} onClick={() => { setStore(s); setView("dashboard"); }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+                <div style={{ width:42, height:42, borderRadius:12, background:s.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:T.bg }}>{s.avatar}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:14, fontWeight:600, color:T.text }}>{s.name}</div>
+                  <div style={{ fontSize:12, color:T.sub }}>{s.category}</div>
                 </div>
-              ))}
-            </div>
-            <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
-              {s.platforms.map(p => <PlatformBadge key={p} platform={p} />)}
-            </div>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:12, paddingTop:12, borderTop:`0.5px solid ${T.border}` }}>
-              <span style={{ fontSize:12, color:T.sub }}>View Dashboard</span>
-              <ChevronRight size={14} color={T.muted} />
-            </div>
-          </Card>
-        ))}
+                <div style={{ display:"flex", gap:4 }}>
+                  <button onClick={(e) => openEdit(s, e)}
+                    style={{ background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:7, padding:"5px", cursor:"pointer", color:T.sub, display:"flex" }} title="Edit store">
+                    <Edit3 size={13} />
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); setDelStore(s); }}
+                    style={{ background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:7, padding:"5px", cursor:"pointer", color:T.red, display:"flex", opacity:0.7 }} title="Delete store">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
+                {[
+                  { label:"Followers",  value:fmtNum(s.followers), color:T.primary },
+                  { label:"Engagement", value:`${s.engagement}%`,  color:T.cyan    },
+                  { label:"Posts",      value:String(storePosts.length), color:T.green },
+                  { label:"City",       value:s.city || "—",       color:T.amber   },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ background:T.dark, borderRadius:8, padding:"8px 10px" }}>
+                    <div style={{ fontSize:11, color:T.muted, marginBottom:2 }}>{label}</div>
+                    <div style={{ fontSize:13, fontWeight:500, color }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                {s.platforms.length > 0
+                  ? s.platforms.map(p => <PlatformBadge key={p} platform={p} />)
+                  : <span style={{ fontSize:11, color:T.muted }}>No platforms added</span>
+                }
+              </div>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:12, paddingTop:12, borderTop:`0.5px solid ${T.border}` }}>
+                <span style={{ fontSize:12, color:T.sub }}>View Dashboard</span>
+                <ChevronRight size={14} color={T.muted} />
+              </div>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════════
-// CALENDAR VIEW
-// ══════════════════════════════════════════════
-function CalendarView({ store, posts, setView }) {
+// ── CALENDAR VIEW ──
+function CalendarView({ store, posts, setPosts, setView }) {
   const today = new Date();
-  const [year, setYear]       = useState(today.getFullYear());
-  const [month, setMonth]     = useState(today.getMonth());
+  const [year, setYear]         = useState(today.getFullYear());
+  const [month, setMonth]       = useState(today.getMonth());
   const [selected, setSelected] = useState(null);
+  const [editPost, setEditPost] = useState(null);
+  const [delPost,  setDelPost]  = useState(null);
   const storePosts = posts.filter(p => p.storeId === store.id);
   const days     = getDaysInMonth(year, month);
   const firstDay = getFirstDay(year, month);
@@ -590,10 +697,23 @@ function CalendarView({ store, posts, setView }) {
     return storePosts.filter(p => p.date === dateStr);
   }
 
+  function handleEditSave(updated) {
+    setPosts(prev => prev.map(p => p.id === updated.id ? updated : p));
+    setEditPost(null);
+  }
+
+  function handleDelete(post) {
+    setPosts(prev => prev.filter(p => p.id !== post.id));
+    setDelPost(null);
+  }
+
   const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
   return (
     <div>
+      {editPost && <EditPostModal post={editPost} onSave={handleEditSave} onClose={() => setEditPost(null)} />}
+      {delPost  && <ConfirmModal message={`"${delPost.caption.slice(0,60)}..." — yeh post delete ho jayegi.`} onConfirm={() => handleDelete(delPost)} onCancel={() => setDelPost(null)} />}
+
       <Header title="Content Calendar" store={store} actions={
         <Btn onClick={() => setView("create")}><Plus size={14} /> Schedule Post</Btn>
       } />
@@ -648,7 +768,7 @@ function CalendarView({ store, posts, setView }) {
           <div style={{ fontSize:16, fontWeight:600, color:T.text, marginBottom:12, fontFamily:"'Cormorant Garamond', serif" }}>Posts on {MONTHS[month]} {selected}, {year}</div>
           {postsOnDate(selected).length === 0 ? (
             <div style={{ textAlign:"center", padding:"20px 0", color:T.muted, fontSize:13 }}>
-              No posts scheduled. <span onClick={() => setView("create")} style={{ color:T.primary, cursor:"pointer" }}>Create one →</span>
+              Koi post nahi hai. <span onClick={() => setView("create")} style={{ color:T.primary, cursor:"pointer" }}>Banao →</span>
             </div>
           ) : (
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -661,7 +781,13 @@ function CalendarView({ store, posts, setView }) {
                     <div style={{ fontSize:13, color:T.text, marginBottom:4 }}>{p.caption}</div>
                     <div style={{ fontSize:11, color:T.muted }}>{p.hashtags}</div>
                   </div>
-                  <StatusBadge status={p.status} />
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6 }}>
+                    <StatusBadge status={p.status} />
+                    <div style={{ display:"flex", gap:6 }}>
+                      <button onClick={() => setEditPost(p)} style={{ background:"transparent", border:"none", cursor:"pointer", color:T.sub, padding:3, borderRadius:5, display:"flex" }}><Edit3 size={12} /></button>
+                      <button onClick={() => setDelPost(p)} style={{ background:"transparent", border:"none", cursor:"pointer", color:T.red, padding:3, borderRadius:5, display:"flex", opacity:0.7 }}><Trash2 size={12} /></button>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -672,7 +798,7 @@ function CalendarView({ store, posts, setView }) {
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginTop:16 }}>
         {[
           { label:"Total Posts", value:String(storePosts.filter(p=>p.date.startsWith(`${year}-${String(month+1).padStart(2,"0")}`)).length), color:T.primary },
-          { label:"Published",   value:String(storePosts.filter(p=>p.status==="published" && p.date.startsWith(`${year}-${String(month+1).padStart(2,"0")}`)).length), color:T.green  },
+          { label:"Published",   value:String(storePosts.filter(p=>p.status==="published").length), color:T.green  },
           { label:"Scheduled",   value:String(storePosts.filter(p=>p.status==="scheduled").length), color:T.amber  },
           { label:"Drafts",      value:String(storePosts.filter(p=>p.status==="draft").length),     color:T.sub    },
         ].map(({ label, value, color }) => (
@@ -686,10 +812,8 @@ function CalendarView({ store, posts, setView }) {
   );
 }
 
-// ══════════════════════════════════════════════
-// CREATE POST VIEW
-// ══════════════════════════════════════════════
-function CreatePostView({ store, setPosts }) {
+// ── CREATE POST VIEW ──
+function CreatePostView({ store, posts, setPosts }) {
   const [platform, setPlatform] = useState(store.platforms[0] || "instagram");
   const [caption,  setCaption]  = useState("");
   const [hashtags, setHashtags] = useState("");
@@ -720,9 +844,9 @@ function CreatePostView({ store, setPosts }) {
       const text  = data.content?.[0]?.text || "";
       const parts = text.split("HASHTAGS:");
       setCaption((parts[0] || "").trim());
-      setHashtags(parts[1] ? "HASHTAGS: " + parts[1].trim() : "");
+      setHashtags(parts[1] ? parts[1].trim() : "");
     } catch {
-      setCaption("Sorry, could not generate content. Please try again.");
+      setCaption("Sorry, AI se connect nahi ho paya. Dobara try karo.");
     }
     setLoading(false);
   }
@@ -767,10 +891,15 @@ function CreatePostView({ store, setPosts }) {
   return (
     <div>
       <Header title="Create Post" store={store} />
+
+      {store.platforms.length === 0 && (
+        <div style={{ background:`${T.amber}15`, border:`0.5px solid ${T.amber}40`, borderRadius:12, padding:"12px 16px", marginBottom:20, fontSize:13, color:T.amber }}>
+          ⚠️ Is store me koi platform nahi juda hai. Pehle "My Stores" me jaake platform add karo.
+        </div>
+      )}
+
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-
-          {/* Platform */}
           <Card style={{ padding:"1.25rem" }}>
             <div style={{ fontSize:13, fontWeight:600, color:T.text, marginBottom:10 }}>Select Platform</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -789,7 +918,6 @@ function CreatePostView({ store, setPosts }) {
             </div>
           </Card>
 
-          {/* AI Generator */}
           <Card style={{ padding:"1.25rem" }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, fontWeight:600, color:T.text, marginBottom:12 }}>
               <Sparkles size={15} color={T.primary} /> AI Content Generator
@@ -797,7 +925,8 @@ function CreatePostView({ store, setPosts }) {
             <div style={{ marginBottom:10 }}>
               <label style={{ fontSize:12, color:T.sub, display:"block", marginBottom:5 }}>Post Topic / Idea</label>
               <input value={topic} onChange={e => setTopic(e.target.value)}
-                placeholder={`e.g., New ${store.category} products, Weekend offers...`}
+                placeholder={`e.g., New ${store.category} offer, Weekend discount...`}
+                onKeyDown={e => e.key === "Enter" && generateWithAI()}
                 style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"9px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
             </div>
             <div style={{ marginBottom:12 }}>
@@ -811,12 +940,11 @@ function CreatePostView({ store, setPosts }) {
                 ))}
               </div>
             </div>
-            <Btn onClick={generateWithAI} disabled={!topic.trim() || loading} loading={loading} style={{ width:"100%", justifyContent:"center" }}>
-              <Sparkles size={14} /> {loading ? "Generating..." : "Generate with AI"}
+            <Btn onClick={generateWithAI} disabled={!topic.trim() || loading || store.platforms.length === 0} loading={loading} style={{ width:"100%", justifyContent:"center" }}>
+              <Sparkles size={14} /> {loading ? "Generate ho raha hai..." : "Generate with AI"}
             </Btn>
           </Card>
 
-          {/* Caption */}
           <Card style={{ padding:"1.25rem" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
               <div style={{ fontSize:13, fontWeight:600, color:T.text }}>Caption</div>
@@ -826,20 +954,19 @@ function CreatePostView({ store, setPosts }) {
               </button>
             </div>
             <textarea value={caption} onChange={e => setCaption(e.target.value)}
-              placeholder="Write your caption here or use AI to generate..."
+              placeholder="Yahan apna caption likho ya AI se generate karo..."
               rows={5}
               style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"10px 12px", color:T.text, fontSize:13, outline:"none", resize:"vertical", boxSizing:"border-box", fontFamily:"inherit", lineHeight:1.6 }} />
             <div style={{ fontSize:11, color:T.muted, marginTop:6, textAlign:"right" }}>{caption.length} characters</div>
           </Card>
 
-          {/* Hashtags */}
           <Card style={{ padding:"1.25rem" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
               <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:13, fontWeight:600, color:T.text }}>
                 <Hash size={14} /> Hashtags
               </div>
               <button onClick={generateHashtags} disabled={!caption.trim() || loading}
-                style={{ background:"transparent", border:"none", cursor:"pointer", color:T.primary, fontSize:12, display:"flex", alignItems:"center", gap:4 }}>
+                style={{ background:"transparent", border:"none", cursor:caption.trim() ? "pointer" : "not-allowed", color:T.primary, fontSize:12, display:"flex", alignItems:"center", gap:4, opacity:caption.trim() ? 1 : 0.4 }}>
                 <RefreshCw size={11} /> {loading ? "..." : "Auto-generate"}
               </button>
             </div>
@@ -848,7 +975,6 @@ function CreatePostView({ store, setPosts }) {
               style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"9px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
           </Card>
 
-          {/* Schedule */}
           <Card style={{ padding:"1.25rem" }}>
             <div style={{ fontSize:13, fontWeight:600, color:T.text, marginBottom:12 }}>Schedule</div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
@@ -863,16 +989,16 @@ function CreatePostView({ store, setPosts }) {
                   style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"8px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box" }}>
                   <option value="scheduled">Scheduled</option>
                   <option value="draft">Save as Draft</option>
+                  <option value="published">Mark as Published</option>
                 </select>
               </div>
             </div>
-            <Btn onClick={savePost} disabled={!caption.trim() || !date || saving} loading={saving} style={{ width:"100%", justifyContent:"center" }}>
-              {saved ? <><Check size={14} color={T.green} /> Saved!</> : <><Send size={14} /> {status === "scheduled" ? "Schedule Post" : "Save Draft"}</>}
+            <Btn onClick={savePost} disabled={!caption.trim() || !date || saving || store.platforms.length === 0} loading={saving} style={{ width:"100%", justifyContent:"center" }}>
+              {saved ? <><Check size={14} color={T.green} /> Saved!</> : <><Send size={14} /> {status === "scheduled" ? "Schedule Post" : status === "draft" ? "Save Draft" : "Save Post"}</>}
             </Btn>
           </Card>
         </div>
 
-        {/* Preview */}
         <div>
           <Card style={{ padding:"1.25rem", position:"sticky", top:0 }}>
             <div style={{ fontSize:13, fontWeight:600, color:T.text, marginBottom:16 }}>Post Preview</div>
@@ -882,7 +1008,7 @@ function CreatePostView({ store, setPosts }) {
                   <div style={{ width:28, height:28, borderRadius:"50%", background:store.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:T.bg }}>{store.avatar}</div>
                   <div>
                     <div style={{ fontSize:12, fontWeight:500, color:"#fff" }}>{store.name}</div>
-                    <div style={{ fontSize:10, color:"#666" }}>{pl?.name}</div>
+                    <div style={{ fontSize:10, color:"#666" }}>{pl?.name || "Platform"}</div>
                   </div>
                   <div style={{ marginLeft:"auto" }}><MoreHorizontal size={16} color="#666" /></div>
                 </div>
@@ -903,7 +1029,7 @@ function CreatePostView({ store, setPosts }) {
                     {caption ? (
                       <><span style={{ fontWeight:500 }}>{store.name.toLowerCase().replace(/ /g,"_")}</span> {caption}</>
                     ) : (
-                      <span style={{ color:"#555" }}>Your caption will appear here...</span>
+                      <span style={{ color:"#555" }}>Caption yahan dikhega...</span>
                     )}
                   </div>
                   {hashtags && <div style={{ fontSize:11, color:pl?.color || T.primary, marginTop:6, lineHeight:1.5 }}>{hashtags}</div>}
@@ -915,10 +1041,10 @@ function CreatePostView({ store, setPosts }) {
             <div style={{ marginTop:16, padding:"12px", background:T.dark, borderRadius:10, border:`0.5px solid ${T.borderH}` }}>
               <div style={{ fontSize:11, fontWeight:600, color:T.primary, marginBottom:6 }}>✦ Best Practices</div>
               <div style={{ fontSize:11, color:T.sub, lineHeight:1.8, whiteSpace:"pre-line" }}>
-                {platform === "instagram" && "• Post between 6-9 PM for best reach\n• Use 5-10 hashtags for optimal visibility\n• Reels get 3x more reach than photos"}
-                {platform === "facebook"  && "• Post at 9 AM or 1-4 PM\n• Videos get 6x more engagement\n• Ask questions to boost comments"}
-                {platform === "twitter"   && "• Tweet 1-5 times per day\n• Use 1-2 hashtags only\n• Threads perform 2x better"}
-                {platform === "linkedin"  && "• Post on weekdays 8-10 AM\n• Long-form content performs best\n• Share industry insights for more reach"}
+                {platform === "instagram" && "• Post 6-9 PM pe best reach milti hai\n• 5-10 hashtags use karo\n• Reels ko 3x zyada reach milti hai"}
+                {platform === "facebook"  && "• 9 AM ya 1-4 PM pe post karo\n• Videos 6x zyada engage hoti hain\n• Questions puchne se comments badhte hain"}
+                {platform === "twitter"   && "• Din me 1-5 tweets karo\n• Sirf 1-2 hashtags use karo\n• Threads 2x better perform karti hain"}
+                {platform === "linkedin"  && "• Weekdays 8-10 AM pe post karo\n• Long-form content best hai\n• Industry insights share karo"}
               </div>
             </div>
           </Card>
@@ -928,9 +1054,7 @@ function CreatePostView({ store, setPosts }) {
   );
 }
 
-// ══════════════════════════════════════════════
-// ANALYTICS VIEW
-// ══════════════════════════════════════════════
+// ── ANALYTICS VIEW ──
 function AnalyticsView({ store, posts }) {
   const [period, setPeriod] = useState("6m");
   const storePosts     = posts.filter(p => p.storeId === store.id && p.status === "published");
@@ -956,11 +1080,9 @@ function AnalyticsView({ store, posts }) {
       </div>
 
       <Card style={{ padding:"1.25rem", marginBottom:16 }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-          <div>
-            <div style={{ fontSize:16, fontWeight:700, color:T.text, marginBottom:2, fontFamily:"'Cormorant Garamond', serif" }}>Follower Growth</div>
-            <div style={{ fontSize:12, color:T.sub }}>Audience growth over time</div>
-          </div>
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:16, fontWeight:700, color:T.text, marginBottom:2, fontFamily:"'Cormorant Garamond', serif" }}>Follower Growth</div>
+          <div style={{ fontSize:12, color:T.sub }}>Audience growth over time</div>
         </div>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={GROWTH_DATA} margin={{ top:0, right:10, bottom:0, left:-20 }}>
@@ -996,6 +1118,7 @@ function AnalyticsView({ store, posts }) {
           <div style={{ fontSize:16, fontWeight:700, color:T.text, marginBottom:4, fontFamily:"'Cormorant Garamond', serif" }}>Platform Breakdown</div>
           <div style={{ fontSize:12, color:T.sub, marginBottom:16 }}>Posts by platform</div>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {store.platforms.length === 0 && <div style={{ fontSize:12, color:T.muted, textAlign:"center", padding:"20px 0" }}>Koi platform nahi juda hai</div>}
             {store.platforms.map(p => {
               const pl  = PLATFORMS[p];
               if (!pl) return null;
@@ -1043,31 +1166,62 @@ function AnalyticsView({ store, posts }) {
               </div>
             );
           })}
-          {storePosts.length === 0 && <div style={{ textAlign:"center", padding:"20px 0", color:T.muted, fontSize:13 }}>No published posts yet.</div>}
+          {storePosts.length === 0 && <div style={{ textAlign:"center", padding:"20px 0", color:T.muted, fontSize:13 }}>Abhi koi published post nahi hai.</div>}
         </div>
       </Card>
     </div>
   );
 }
 
-// ══════════════════════════════════════════════
-// SETTINGS VIEW
-// ══════════════════════════════════════════════
-function SettingsView({ store }) {
-  const [saved, setSaved] = useState(false);
+// ── SETTINGS VIEW ──
+function SettingsView({ store, setStores, stores, setStore }) {
+  const [saved,    setSaved]    = useState(false);
+  const [fullName, setFullName] = useState("Admin User");
+  const [email,    setEmail]    = useState("admin@rasaya.in");
+  const [biz,      setBiz]      = useState("Rasaya Social");
+  const [phone,    setPhone]    = useState("+91 98765 43210");
+  const [showReset, setShowReset] = useState(false);
+
   function save() { setSaved(true); setTimeout(() => setSaved(false), 2000); }
+
+  function resetToDemo() {
+    localStorage.removeItem('rasaya_stores');
+    localStorage.removeItem('rasaya_posts');
+    window.location.reload();
+  }
+
+  function clearAllData() {
+    setStores([]);
+    localStorage.removeItem('rasaya_stores');
+    localStorage.removeItem('rasaya_posts');
+    setShowReset(false);
+  }
+
   return (
     <div>
+      {showReset && (
+        <ConfirmModal
+          message="Saara data delete ho jayega — stores, posts, sab kuch. Kya aap confirm karte ho?"
+          onConfirm={clearAllData}
+          onCancel={() => setShowReset(false)}
+        />
+      )}
       <Header title="Settings" store={store} />
       <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:20 }}>
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
           <Card style={{ padding:"1.5rem" }}>
             <div style={{ fontSize:16, fontWeight:700, color:T.text, marginBottom:16, fontFamily:"'Cormorant Garamond', serif" }}>Account Settings</div>
             <div style={{ display:"grid", gap:12 }}>
-              {[["Full Name","Admin User"],["Email","admin@rasaya.in"],["Business Name","Rasaya Social"],["Phone","+91 98765 43210"]].map(([label, val]) => (
+              {[
+                ["Full Name", fullName, setFullName],
+                ["Email",     email,    setEmail   ],
+                ["Business",  biz,      setBiz     ],
+                ["Phone",     phone,    setPhone   ],
+              ].map(([label, val, setter]) => (
                 <div key={label}>
                   <label style={{ fontSize:12, color:T.sub, display:"block", marginBottom:5 }}>{label}</label>
-                  <input defaultValue={val} style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"9px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
+                  <input value={val} onChange={e => setter(e.target.value)}
+                    style={{ width:"100%", background:T.dark, border:`0.5px solid ${T.border}`, borderRadius:8, padding:"9px 12px", color:T.text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
                 </div>
               ))}
             </div>
@@ -1091,12 +1245,37 @@ function SettingsView({ store }) {
                       <div style={{ fontSize:13, fontWeight:500, color:T.text }}>{pl.name}</div>
                       <div style={{ fontSize:11, color:connected ? T.green : T.muted }}>{connected ? "✓ Connected" : "Not connected"}</div>
                     </div>
-                    <Btn variant={connected ? "ghost" : "primary"} style={{ padding:"5px 14px", fontSize:12 }}>
+                    <Btn
+                      variant={connected ? "ghost" : "primary"}
+                      style={{ padding:"5px 14px", fontSize:12 }}
+                      onClick={() => {
+                        setStores(prev => prev.map(s => s.id === store.id
+                          ? { ...s, platforms: connected ? s.platforms.filter(p=>p!==key) : [...s.platforms, key] }
+                          : s
+                        ));
+                        setStore(s => ({ ...s, platforms: connected ? s.platforms.filter(p=>p!==key) : [...s.platforms, key] }));
+                      }}
+                    >
                       {connected ? "Disconnect" : "Connect"}
                     </Btn>
                   </div>
                 );
               })}
+            </div>
+          </Card>
+
+          {/* DANGER ZONE */}
+          <Card style={{ padding:"1.5rem", border:`0.5px solid ${T.red}30` }}>
+            <div style={{ fontSize:16, fontWeight:700, color:T.red, marginBottom:4, fontFamily:"'Cormorant Garamond', serif" }}>Danger Zone</div>
+            <div style={{ fontSize:12, color:T.sub, marginBottom:16 }}>Ye actions irreversible hain — sochke karo</div>
+            <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+              <Btn variant="ghost" style={{ fontSize:12, borderColor:`${T.amber}50`, color:T.amber }}
+                onClick={resetToDemo}>
+                <RefreshCw size={13} /> Demo Data se Reset karo
+              </Btn>
+              <Btn variant="danger" style={{ fontSize:12 }} onClick={() => setShowReset(true)}>
+                <Trash2 size={13} /> Saara Data Delete karo
+              </Btn>
             </div>
           </Card>
         </div>
@@ -1107,7 +1286,7 @@ function SettingsView({ store }) {
             <div style={{ padding:"16px", background:`${T.primary}15`, border:`0.5px solid ${T.primary}40`, borderRadius:12, marginBottom:14, marginTop:10 }}>
               <div style={{ fontSize:18, fontWeight:700, color:T.primary, marginBottom:2, letterSpacing:"1px", fontFamily:"'Cormorant Garamond', serif" }}>✦ Pro Plan</div>
               <div style={{ fontSize:24, fontWeight:700, color:T.text, fontFamily:"'Cormorant Garamond', serif" }}>₹999<span style={{ fontSize:13, fontWeight:400, color:T.sub }}>/month</span></div>
-              <div style={{ fontSize:11, color:T.sub, marginTop:4 }}>Billed monthly · Next: June 1, 2025</div>
+              <div style={{ fontSize:11, color:T.sub, marginTop:4 }}>Billed monthly · Next: June 1, 2026</div>
             </div>
             {["Up to 5 stores","Unlimited posts","AI content generator","Analytics dashboard","Priority support"].map(f => (
               <div key={f} style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, color:T.sub, marginBottom:8 }}>
@@ -1139,71 +1318,60 @@ function SettingsView({ store }) {
   );
 }
 
-// ══════════════════════════════════════════════
-// FOOTER
-// ══════════════════════════════════════════════
+// ── FOOTER ──
 function Footer() {
   return (
-    <footer style={{
-      borderTop: `0.5px solid ${T.border}`,
-      padding: "24px 32px",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: 8,
-      marginTop: 32,
-    }}>
-      <div style={{
-        fontFamily: "'Cormorant Garamond', serif",
-        fontSize: 18,
-        fontWeight: 700,
-        letterSpacing: "4px",
-        background: `linear-gradient(135deg, ${T.amber}, ${T.primary})`,
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        backgroundClip: "text",
-      }}>✦ RASAYA SOCIAL ✦</div>
-      <div style={{ fontSize: 10, color: T.muted, letterSpacing: "3px", textTransform: "uppercase" }}>
-        Smart Posting · Stronger Growth
-      </div>
-      <div style={{ fontSize: 11, color: T.muted, textAlign: "center", lineHeight: 1.7 }}>
+    <footer style={{ borderTop:`0.5px solid ${T.border}`, padding:"24px 32px", display:"flex", flexDirection:"column", alignItems:"center", gap:8, marginTop:32 }}>
+      <div style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:18, fontWeight:700, letterSpacing:"4px", color:T.amber }}>✦ RASAYA SOCIAL ✦</div>
+      <div style={{ fontSize:10, color:T.muted, letterSpacing:"3px", textTransform:"uppercase" }}>Smart Posting · Stronger Growth</div>
+      <div style={{ fontSize:11, color:T.muted, textAlign:"center", lineHeight:1.7 }}>
         © {new Date().getFullYear()} Rasaya Social. All rights reserved.
-        <span style={{ margin: "0 8px", color: T.border }}>|</span>
-        Developed by <span style={{ color: T.primary }}>Kunal Jain</span>
-        <span style={{ margin: "0 8px", color: T.border }}>·</span>
-        <span style={{ color: T.primary }}>rasayacrm.in</span>
+        <span style={{ margin:"0 8px", color:T.border }}>|</span>
+        Developed by <span style={{ color:T.primary }}>Kunal Jain</span>
+        <span style={{ margin:"0 8px", color:T.border }}>·</span>
+        <span style={{ color:T.primary }}>rasayacrm.in</span>
       </div>
     </footer>
   );
 }
 
-// ══════════════════════════════════════════════
-// MAIN APP
-// ══════════════════════════════════════════════
+// ── MAIN APP ──
 export default function App() {
   const [view,      setView]      = useState("dashboard");
-  const [stores, setStores] = useState(() => {
-  try {
-    const saved = localStorage.getItem('rasaya_stores');
-    return saved ? JSON.parse(saved) : INIT_STORES;
-  } catch { return INIT_STORES; }
-  });
-  const [store,     setStore]     = useState(INIT_STORES[0]);
-  const [posts, setPosts] = useState(() => {
-  try {
-    const saved = localStorage.getItem('rasaya_posts');
-    return saved ? JSON.parse(saved) : INIT_POSTS;
-  } catch { return INIT_POSTS; }
-  });
   const [collapsed, setCollapsed] = useState(false);
 
-  useEffect(() => {
-  localStorage.setItem('rasaya_stores', JSON.stringify(stores));
-}, [stores]);
+  const [stores, setStores] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rasaya_stores');
+      return saved ? JSON.parse(saved) : DEMO_STORES;
+    } catch { return DEMO_STORES; }
+  });
 
-useEffect(() => {
-  localStorage.setItem('rasaya_posts', JSON.stringify(posts));
-}, [posts]);
+  const [posts, setPosts] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rasaya_posts');
+      return saved ? JSON.parse(saved) : DEMO_POSTS;
+    } catch { return DEMO_POSTS; }
+  });
+
+  const [store, setStore] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rasaya_stores');
+      const arr   = saved ? JSON.parse(saved) : DEMO_STORES;
+      return arr[0] || DEMO_STORES[0];
+    } catch { return DEMO_STORES[0]; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('rasaya_stores', JSON.stringify(stores));
+    if (stores.length > 0 && !stores.find(s => s.id === store.id)) {
+      setStore(stores[0]);
+    }
+  }, [stores]);
+
+  useEffect(() => {
+    localStorage.setItem('rasaya_posts', JSON.stringify(posts));
+  }, [posts]);
 
   return (
     <div style={{ display:"flex", height:"100vh", background:T.bg, color:T.text, fontFamily:"'Outfit', 'Segoe UI', system-ui, sans-serif", overflow:"hidden" }}>
@@ -1224,12 +1392,12 @@ useEffect(() => {
         collapsed={collapsed} setCollapsed={setCollapsed}
       />
       <main style={{ flex:1, overflow:"auto", padding:"28px 32px" }}>
-        {view === "dashboard" && <DashboardView store={store} posts={posts} setView={setView} />}
-        {view === "stores"    && <StoresView stores={stores} setStores={setStores} setStore={setStore} setView={setView} />}
-        {view === "calendar"  && <CalendarView store={store} posts={posts} setView={setView} setPosts={setPosts} />}
+        {view === "dashboard" && <DashboardView store={store} posts={posts} setPosts={setPosts} setView={setView} />}
+        {view === "stores"    && <StoresView stores={stores} setStores={setStores} store={store} setStore={setStore} setView={setView} posts={posts} />}
+        {view === "calendar"  && <CalendarView store={store} posts={posts} setPosts={setPosts} setView={setView} />}
         {view === "create"    && <CreatePostView store={store} posts={posts} setPosts={setPosts} />}
         {view === "analytics" && <AnalyticsView store={store} posts={posts} />}
-        {view === "settings"  && <SettingsView store={store} />}
+        {view === "settings"  && <SettingsView store={store} setStore={setStore} stores={stores} setStores={setStores} />}
         <Footer />
       </main>
     </div>
